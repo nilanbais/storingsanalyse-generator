@@ -14,8 +14,8 @@ workorder_attribute_names = {"werkorder": "wonum",
                              "status": "status",
                              "rapport datum": "reportdate",
                              "werkorder beschrijving": "description",
-                             "sbs": "gmblocation",
-                             "sbs2": "gmblocation2",
+                             "asset nummer": "assetnum",
+                             "asset nummer 2": "assetnum2",
                              "probleemcode": "problemcode",
                              "beschrijving probleem": "gmbctschcodering8",
                              "oorzaak code": "fr1code",
@@ -33,18 +33,23 @@ workorder_attribute_names = {"werkorder": "wonum",
                              "funcitoneel herstel": "gmbctschcodering36",
                              "definitief herstel": "gmbctschcodering37",
                              "is financieel nadeel": "gmbisfinnadeel",
-                             "Gmblocation3": "gmblocation3",
-                             "Gemeld asset": "gmb_gemeldasset"
+                             "gmblocation3": "gmblocation3",
+                             "gemeld asset": "gmb_gemeldasset",
+                             "vestiging": "siteid"
                              }
 
-asset_attribute_names = {"activum": "assetnum",
+asset_attribute_names = {"sbs": "gmblocation",
                          "asset beschrijving": "description",
-                         "sbs omschrijving": "gmbdescription",
-                         "vestiging": "siteid"
+                         "locatie": "location",
+                         # "sbs2": "gmblocation2",
+                         # "asset beschrijving 2": "description",
+                         # "locatie 2": "location2"
                          }
 
-locations_attibute_names = {"locatie": "location",
-                            "locatie omschrijving": "description"
+locations_attibute_names = {"locatie omschrijving": "description",
+                            "locatie 2 omschrijving": "description"
                             }
 
-all_attribute_names = dict(workorder_attribute_names, **asset_attribute_names, **locations_attibute_names)
+# dt_attributes contains every attribute that contains a datetime object AND ISN'T reportdate
+dt_attributes = ['gmbctschcodering24', 'targstartdate', 'schedstart', 'actstart', 'actfinish',
+                 'gmbctschcodering35', 'gmbctschcodering33', 'gmbctschcodering36', 'gmbctschcodering37']
