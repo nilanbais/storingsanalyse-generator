@@ -297,8 +297,9 @@ for i in range(2, end_row + 2):
     worksheet.data_validation(f'{letters[col_index_type_melding]}{i}',
                               options={'validate': 'list', 'source': options_ref})
 
-# Hiding all unused rows
-worksheet.set_default_row(hide_unused_rows=True)
+# Hiding all unused rows and setting row heights
+worksheet.set_default_row(height=30, hide_unused_rows=True)
+worksheet.set_row(0, 15)
 
 # Assigning format for textwrapping
 text_wrap_format = workbook.add_format({'text_wrap': True})
