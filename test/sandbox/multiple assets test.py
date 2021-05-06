@@ -134,7 +134,6 @@ in de regels waar assetnum niet leeg is.
 raw_asset_df = data_df.loc[data_df['asset'].notna(), ['asset']]
 raw_locations_df = data_df.loc[data_df['locations'].notna(), ['locations']]
 
-# Todo: Onderstaande tot functie maken
 """
 Elke index in raw_asset_df bevestigd dat er len(raw_asset_df.loc[i, 'asset']) asset nummers aanwezig zijn.
 """

@@ -11,8 +11,8 @@ from datetime import datetime as dt
 import numpy as np
 import pandas as pd
 
-from mapped_attribute_names import workorder_attribute_names as wan, asset_attribute_names as aan, dt_attributes,\
-    locations_attibute_names as lan
+from mapped_attribute_names import workorder_attribute_names as wan, asset_attribute_names as aan, dt_attributes
+from mapped_attribute_names import staging_file_columns1 as new_col_order
 
 # Changing current working dir to the src folder
 while 1:
@@ -80,14 +80,33 @@ def update_description(map_dict, suffix):
             map_dict[key] = map_dict[key] + suffix
 
 
+def get_breakdown_description(sbs_lbs):
+    description = [description_df.loc[str(index), 'description']
+                   for index in range(description_df.shape[0])
+                   if sbs_lbs == description_df.loc[str(index), 'location']]
+    return description if len(description) > 0 else [""]  # To cover empty rows
+
+
+def get_breakdown_descriptions(sbs_lbs_series):
+    description_list = [get_breakdown_description(sbs_lbs) for sbs_lbs in sbs_lbs_series]
+    return description_list
+
+
+def del_suffix(dictionary):
+    def clean_key(a): return a.replace('_asset1', '') if '1' in a else a.replace('_asset', ' ')
+    new_dictionary = {clean_key(key): dictionary[key] for key in dictionary.keys()}
+    return new_dictionary
+
+
+# Initializing standard variables
+suffixes = ['_asset1', '_asset2']
+
 # Data inlezen
-input_data_file = 'raw_json_payload.json'
-with open(input_data_file, 'r') as input_file:
+with open('raw_json_payload.json', 'r') as input_file:
     data = json.load(input_file)
 
 # Omschrijvingen tabel inlezen
-resource_file = 'location_description_map.json'
-rel_path = f'..\\res\\{resource_file}'
+rel_path = f'..\\res\\location_description_map.json'
 with open(rel_path, 'r') as r:
     description_data = json.load(r)
 
@@ -104,7 +123,6 @@ data_df['index'] = data_df.index
 # Creating list variables of the different attributes that need to be extracted
 wo_attributes = [wan[x] for x in wan.keys()]
 asset_attributes = [aan[x] for x in aan.keys()]
-location_attributes = [lan[x] for x in lan.keys()]
 
 # Creating the workorder df with an index column
 workorder = data_df.loc[:, wo_attributes].copy()
@@ -114,11 +132,12 @@ workorder.loc[:, 'index'] = workorder.index
 raw_asset_df = data_df.loc[data_df['asset'].notna(), ['asset']]
 raw_locations_df = data_df.loc[data_df['locations'].notna(), ['locations']]
 
-# Todo: Onderstaande tot functie maken
 # Initializing an empty df
 asset_df = pd.DataFrame()
-# Adding a attribute to the list of attributes to extract
-asset_attributes.append("assetnum")
+
+# # Adding a attribute to the list of attributes to extract
+# asset_attributes.append("assetnum")
+
 # Iterating over the nested json in the asset column
 for index, row in raw_asset_df.iterrows():
     # Appointing the first and second asset number to their own value
@@ -142,7 +161,8 @@ for index, row in raw_asset_df.iterrows():
 
     # Initializing an empty dataframe with the columns of the asset_attributes too include the datapoints of the second
     # asset number, even if no second number is given
-    empty_frame = pd.DataFrame({'gmblocation': [""], 'description': [""], 'location': [""], 'assetnum': [""]})
+    # empty_frame = pd.DataFrame({'gmblocation': [""], 'description': [""], 'location': [""], 'assetnum': [""]})
+    empty_frame = pd.DataFrame({'gmblocation': [""], 'description': [""], 'location': [""]})
 
     # Remove the extracted asset number from the list of not nan asset numbers
     not_nan_asset_nums.remove(flattened_row['assetnum'].values)
@@ -160,40 +180,59 @@ for index, row in raw_asset_df.iterrows():
         to_add.loc[:, 'index'] = index
 
     # Merging the to_add df to the result df on the added index-column
-    asset_row = result.merge(to_add, on='index', suffixes=('_asset1', '_asset2'))
+    asset_row = result.merge(to_add, on='index', suffixes=(suffixes[0], suffixes[-1]))  # suffix resp. _asset1, _asset2
 
     # Adding the merged row w/ asset data to asset_df
     asset_df = asset_df.append(asset_row)
 
 # Removing the added attribute to not interfere with any upcomming process
-asset_attributes.remove("assetnum")
+# asset_attributes.remove("assetnum")
 
 """
 Hier code voor het ophalen van de omschrijving van de sbs
 """
-# todo: schrijf functie voor het ophalen van de verschillende omschrijvingen sbs/locattie 1&2
-list_sbs_description = []
+asset_df = asset_df.reset_index().drop(columns='level_0')
+
+# Creating a new version of the asset_attributes map_dict
+new_aan = {}
+for att in asset_df.columns:
+    split = att.split('_')
+    key = [x + "_" + split[-1] for x in aan.keys() if aan[x] == split[0]]
+    if len(key) > 0:
+        new_aan[key[-1]] = att
+
+# Creating the map_dict for the sbs/lbs descriptions
+description_attribute_names = {}
+for suffix in suffixes:
+    asset_df.loc[:, aan['sbs'] + "_description" + suffix] = get_breakdown_descriptions(asset_df[aan['sbs'] + suffix])
+    asset_df.loc[:, aan['locatie'] + "_description" + suffix] = get_breakdown_descriptions(asset_df[aan['locatie'] + suffix])
+
+    description_attribute_names['sbs' + suffix + ' omschrijving'] = aan['sbs'] + "_description" + suffix
+    description_attribute_names['locatie' + suffix + ' omschrijving'] = aan['locatie'] + "_description" + suffix
+
+# Deleting variable to save memory
+del aan
+
+# Deleting the suffixes from the keys of the dictionaries
+new_aan = del_suffix(new_aan)
+description_attribute_names = del_suffix(description_attribute_names)
 
 # Merging the workorder df, the asset df, and the locations df to one big df that can be used as base for the
 # data that has to be included in the staging_file.xlsx
 df_staging_file = workorder.copy().merge(asset_df, how='left', on='index', suffixes=('', ''))
 
-# Updating the values in the map dicts
-update_description(map_dict=aan, suffix='_asset')
+# # Updating the values in the map dicts
+# update_description(map_dict=aan, suffix='_asset')
 
 # Cleaning the df by dropping the added index column and filling the np.nan values with ""
 df_staging_file.drop(labels='index', axis=1, inplace=True)
 df_staging_file.fillna(value="", inplace=True)
 
 # Rearranging the df to make it look familiar (like the export the maintenance engineers get from IBM Maximo)
-col_list = df_staging_file.columns.tolist()
-col_order = ['wonum', 'status', 'reportdate', 'description', 'assetnum', 'description_asset',
-             'gmblocation', 'gmblocation2', 'gmbdescription', 'location', 'description_locations', 'siteid',
-             'problemcode', 'gmbctschcodering8', 'fr1code', 'gmbctschcodering9', 'fr2code', 'gmb_solution',
-             'gmbctschcodering17', 'gmbctschcodering24', 'targstartdate', 'schedstart', 'actstart', 'actfinish',
-             'gmbctschcodering35', 'gmbctschcodering33', 'gmbctschcodering36', 'gmbctschcodering37', 'gmbisfinnadeel',
-             'gmblocation3', 'gmb_gemeldasset']
-df_staging_file = df_staging_file.loc[:, col_order]
+# col_list = df_staging_file.columns.tolist()
+col_dict = dict(wan, **new_aan, **description_attribute_names)
+
+df_staging_file = df_staging_file.loc[:, [col_dict[x] for x in new_col_order]]
 
 # Adding a column just containing the number of the month AND cleaning the way df['reportdate'] is presented
 datetime_objects = []
@@ -218,10 +257,8 @@ for att in dt_attributes:
     # Changing the old values for the cleaned values
     df_staging_file.loc[:, att] = clean_dt_list
 
-# Create list of all the column names
-all_attribute_names = dict(wan, **aan, **lan)
 # Switching keys and values of the dict to get a var to rename the columns of df_staging_file
-new_col_names = switch_key_val(all_attribute_names)
+new_col_names = switch_key_val(col_dict)
 # Renaming df_staging_file
 df_staging_file = df_staging_file.rename(new_col_names, axis='columns')
 

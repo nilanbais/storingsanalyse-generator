@@ -46,9 +46,28 @@ asset_attribute_names = {"sbs": "gmblocation",
                          # "locatie 2": "location2"
                          }
 
-locations_attibute_names = {"locatie omschrijving": "description",
-                            "locatie 2 omschrijving": "description"
-                            }
+"""
+van onderstaande is de eerste gesorteerd per 1 of 2 
+de tweede is gesorteerd per data (assetnum 1&2, sbs 1&2 enz.)
+"""
+staging_file_columns1 = ['werkorder', 'status', 'rapport datum', 'werkorder beschrijving',
+                         'asset nummer', 'asset beschrijving', 'sbs', 'sbs omschrijving', 'locatie', 'locatie omschrijving',
+                         'asset nummer 2', 'asset beschrijving 2', 'sbs 2', 'sbs 2 omschrijving', 'locatie 2', 'locatie 2 omschrijving',
+                         'probleemcode', 'beschrijving probleem', 'oorzaak code', 'beschrijving oorzaak', 'oplos code', 'oplossing beschrijving', 'uitgevoerde werkzaamheden',
+                         'tijdstip monteur ter plaatse', 'streefdatum start', 'geplande start', 'werkelijke start',
+                         'tijdstip einde werkzaamheden', 'tijdstip afmelding', 'tijdstip validatie',
+                         'funcitoneel herstel', 'definitief herstel', 'is financieel nadeel', 'gmblocation3',
+                         'gemeld asset', 'vestiging']
+
+staging_file_columns2 = ['werkorder', 'status', 'rapport datum', 'werkorder beschrijving',
+                         'asset nummer', 'asset beschrijving', 'asset nummer 2', 'asset beschrijving 2',
+                         'sbs', 'sbs omschrijving', 'sbs 2', 'sbs 2 omschrijving',
+                         'locatie', 'locatie omschrijving', 'locatie 2', 'locatie 2 omschrijving',
+                         'probleemcode', 'beschrijving probleem', 'oorzaak code', 'beschrijving oorzaak', 'oplos code',
+                         'oplossing beschrijving', 'uitgevoerde werkzaamheden', 'tijdstip monteur ter plaatse',
+                         'streefdatum start', 'geplande start', 'werkelijke start', 'tijdstip einde werkzaamheden',
+                         'tijdstip afmelding', 'tijdstip validatie', 'funcitoneel herstel', 'definitief herstel',
+                         'is financieel nadeel', 'gmblocation3', 'gemeld asset', 'vestiging']
 
 # dt_attributes contains every attribute that contains a datetime object AND ISN'T reportdate
 dt_attributes = ['gmbctschcodering24', 'targstartdate', 'schedstart', 'actstart', 'actfinish',
