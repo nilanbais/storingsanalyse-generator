@@ -261,7 +261,7 @@ df_staging_file.insert(loc=col_index_type_melding,
 """
 Setting up the .xlsx-file
 """
-export_path = 'staging file\\test_w_list.xlsx'
+export_path = 'staging file\\staging_file.xlsx'
 letters = list(string.ascii_uppercase)
 
 # Setting up the writer
