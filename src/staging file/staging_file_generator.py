@@ -22,8 +22,14 @@ while 1:
         os.chdir('..')
 
 
-# Todo: Het ophalen van de beschrijvingen van sbs en location (1&2) uit het resource document.
-# Todo: Code aanpassen zodat de attribuutnamen weer kloppen
+# Omschrijvingen tabel inlezen
+rel_path = f'..\\res\\location_description_map.json'
+with open(rel_path, 'r') as r:
+    description_data = json.load(r)
+
+# Df for the connection between the sbs/lbs numbers and their description
+description_df = pd.DataFrame(description_data)
+
 
 def switch_key_val(dictionary):
     """
@@ -81,6 +87,7 @@ def update_description(map_dict, suffix):
 
 
 def get_breakdown_description(sbs_lbs):
+    global description_df
     description = [description_df.loc[str(index), 'description']
                    for index in range(description_df.shape[0])
                    if sbs_lbs == description_df.loc[str(index), 'location']]
@@ -105,38 +112,24 @@ suffixes = ['_asset1', '_asset2']
 with open('raw_json_payload.json', 'r') as input_file:
     data = json.load(input_file)
 
-# Omschrijvingen tabel inlezen
-rel_path = f'..\\res\\location_description_map.json'
-with open(rel_path, 'r') as r:
-    description_data = json.load(r)
-
 # DataFrame van de data maken en de kolomnamen isoleren in var
 data_df = pd.DataFrame(data)
-data_attributes = data_df.columns
-
-# Df for the connection between the sbs/lbs numbers and their description
-description_df = pd.DataFrame(description_data)
 
 # Adding index to data_df for the upcoming join
 data_df['index'] = data_df.index
 
 # Creating list variables of the different attributes that need to be extracted
-wo_attributes = [wan[x] for x in wan.keys()]
 asset_attributes = [aan[x] for x in aan.keys()]
 
 # Creating the workorder df with an index column
-workorder = data_df.loc[:, wo_attributes].copy()
+workorder = data_df.loc[:, [wan[x] for x in wan.keys()]].copy()
 workorder.loc[:, 'index'] = workorder.index
 
 # Creating raw versions of the df to use as input in the function
 raw_asset_df = data_df.loc[data_df['asset'].notna(), ['asset']]
-raw_locations_df = data_df.loc[data_df['locations'].notna(), ['locations']]
 
 # Initializing an empty df
 asset_df = pd.DataFrame()
-
-# # Adding a attribute to the list of attributes to extract
-# asset_attributes.append("assetnum")
 
 # Iterating over the nested json in the asset column
 for index, row in raw_asset_df.iterrows():
@@ -185,9 +178,6 @@ for index, row in raw_asset_df.iterrows():
     # Adding the merged row w/ asset data to asset_df
     asset_df = asset_df.append(asset_row)
 
-# Removing the added attribute to not interfere with any upcomming process
-# asset_attributes.remove("assetnum")
-
 """
 Hier code voor het ophalen van de omschrijving van de sbs
 """
@@ -209,9 +199,6 @@ for suffix in suffixes:
 
     description_attribute_names['sbs' + suffix + ' omschrijving'] = aan['sbs'] + "_description" + suffix
     description_attribute_names['locatie' + suffix + ' omschrijving'] = aan['locatie'] + "_description" + suffix
-
-# Deleting variable to save memory
-del aan
 
 # Deleting the suffixes from the keys of the dictionaries
 new_aan = del_suffix(new_aan)
