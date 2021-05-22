@@ -42,6 +42,7 @@ import json
 import pandas as pd
 import os
 import numpy as np
+from datetime import datetime
 
 # Changing current working dir to the src folder
 while 1:
@@ -50,32 +51,36 @@ while 1:
     else:
         os.chdir('..')
 
-"""
-Onderstaande is gekopieërd uit staging_file_generator.py
-"""
-# todo: functies in een package zetten voor een centraal beheer van de functies i.p.v. kopiëren en zo
-# Omschrijvingen tabel inlezen
-rel_path = f'..\\res\\location_description_map.json'
-with open(rel_path, 'r') as r:
-    description_data = json.load(r)
-
-# Df for the connection between the sbs/lbs numbers and their description
-description_df = pd.DataFrame(description_data)
-
 
 def get_first_key(dictionary):
     return list(dictionary.keys())[0]
 
 
+def del_empty_keys(dictionary):
+    return {key: dictionary[key] for key in dictionary.keys() if dictionary[key] != {}}
+
+
+def clean_dt_object(dt_string):
+    month_notation = ['Jan', 'Feb', 'Mrt', 'Apr', 'Mei', 'Jun', 'Jul', 'Aug', 'Sept', 'Okt', 'Nov', 'Dec']
+    month_notation = {month_notation[idx]: str(idx + 1) for idx in range(len(month_notation))}
+
+    dt_month, dt_year = month_notation[dt_string.split(' - ')[0]], datetime.strptime(dt_string.split(' - ')[1], '%y')
+
+    dt_string = '0' + dt_month + '_' + datetime.strftime(dt_year, '%Y') if len(dt_month) == 1 \
+        else dt_month + '_' + datetime.strftime(dt_year, '%Y')
+
+    return dt_string
+
+
 # Vooraf gedefinieerde json variabele
-project = 'Coentunnel-tracé'
+project = 'Sluis Eefde'
 contract_info = {"tijdsregistratie": "True",
                  "minimale_beschikbaarheid": "xx",
                  "minimale_responsetijd": "04:00:00"}
 
 
 # Full path to input file
-file_input = 'metadata//20200715 Storingsdatabase Q2 2020.xlsx'
+file_input = 'metadata//L2T Sluis Eefde - Q4 2020 kwartaalrapportage.xlsx'
 excel_file = pd.ExcelFile(file_input)
 
 inputdata_meldingen = pd.read_excel(excel_file, excel_file.sheet_names[0])
@@ -96,17 +101,16 @@ for col in meldingen_data.iloc[:, 4:]:  # mask on df gives only the columns w/ m
     if meldingen_data[col][0] == "Totaal":  # last column after the months in the df
         break
     else:
-        print(meldingen_data[col][0])
+        dt_obj = clean_dt_object(meldingen_data[col][0])
         # initialize empty dict for month
-        if meldingen_data[col][0] not in meldingen:
-            # todo: format maand-jaar notatie aanpassen
-            meldingen[meldingen_data[col][0]] = {}  # Creates an empty dict w/ month as key in the meldingen dict
+        if dt_obj not in meldingen:
+            meldingen[dt_obj] = {}  # Creates an empty dict w/ month as key in the meldingen dict
 
         for index, row in meldingen_data.iterrows():
             if row[col] is np.nan:  # If nan is seen => caught up to current date
                 break
             elif index > 0 and int(row[col]) > 0:
-                meldingen[meldingen_data[col][0]][row['SBS sub-systeem code']] = row[col]
+                meldingen[dt_obj][row['SBS sub-systeem code']] = row[col]
 
 """
 storingen per di_num
@@ -123,26 +127,27 @@ for col in storingen_data.iloc[:, 4:]:  # mask on df gives only the columns w/ m
     if storingen_data[col][0] == "Totaal":  # last column after the months in the df
         break
     else:
+        dt_obj = clean_dt_object(storingen_data[col][0])
         # initialize empty dict for month
-        if storingen_data[col][0] not in storingen:
-            # todo: format maand-jaar notatie aanpassen
-            storingen[storingen_data[col][0]] = {}  # Creates an empty dict w/ month as key in the storingen dict
+        if dt_obj not in storingen:
+            storingen[dt_obj] = {}  # Creates an empty dict w/ month as key in the storingen dict
 
         for index, row in storingen_data.iterrows():
             if row[col] is np.nan:  # If nan is seen => caught up to current date
                 break
             elif index > 0 and int(row[col]) > 0:
-                storingen[storingen_data[col][0]][row['SBS sub-systeem code']] = row[col]
+                storingen[dt_obj][row['SBS sub-systeem code']] = row[col]
 
-# todo: Uit dict meldingen en dict storingen de lege maanden verwijderen
+meldingen = del_empty_keys(meldingen)
+storingen = del_empty_keys(storingen)
 
 start_datum = get_first_key(meldingen)
 
 json_dict = {"project": project,
              "start_datum": start_datum,
-             "contact_info": contract_info,
+             "contract_info": contract_info,
              "meldingen": meldingen,
              "storingen": storingen}
 
-with open(f'metadata//{project}_meta.json', 'w') as output_file:
+with open(f"metadata//metadata_file_{project.lower().replace(' ', '_')}.json", 'w') as output_file:
     json.dump(json_dict, output_file)

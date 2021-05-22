@@ -13,6 +13,7 @@ import pandas as pd
 
 from mapped_attribute_names import workorder_attribute_names as wan, asset_attribute_names as aan, dt_attributes
 from mapped_attribute_names import staging_file_columns1 as new_col_order
+from location_description_map import description_df
 
 # Changing current working dir to the src folder
 while 1:
@@ -20,15 +21,6 @@ while 1:
         break
     else:
         os.chdir('..')
-
-
-# Omschrijvingen tabel inlezen
-rel_path = f'..\\res\\location_description_map.json'
-with open(rel_path, 'r') as r:
-    description_data = json.load(r)
-
-# Df for the connection between the sbs/lbs numbers and their description
-description_df = pd.DataFrame(description_data)
 
 
 def switch_key_val(dictionary):
