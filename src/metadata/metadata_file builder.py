@@ -52,6 +52,8 @@ while 1:
         os.chdir('..')
 
 
+# Todo: OPTIE uitzoeken of het nuttig is om hier een class voor te maken.
+
 def get_first_key(dictionary):
     return list(dictionary.keys())[0]
 
@@ -78,13 +80,25 @@ contract_info = {"tijdsregistratie": "True",
                  "minimale_beschikbaarheid": "xx",
                  "minimale_responsetijd": "04:00:00"}
 
-
 # Full path to input file
 file_input = 'metadata//L2T Sluis Eefde - Q4 2020 kwartaalrapportage.xlsx'
 excel_file = pd.ExcelFile(file_input)
 
 inputdata_meldingen = pd.read_excel(excel_file, excel_file.sheet_names[0])
 inputdata_storingen = pd.read_excel(excel_file, excel_file.sheet_names[1])
+inputdata_subsystems = pd.read_excel(excel_file, 'Onterechte meldingen totaal')
+
+"""
+Possible subsystem numbers
+"""
+possible_subsystems = set()
+
+# Sluis Eefde gebruikt 'SBS subsysteem code'  -  ipv 'SBS sub-systeem code'
+col = 'SBS subsysteem code' if project == 'Sluis Eefde' else 'SBS sub-systeem code'
+for x in inputdata_subsystems[col][inputdata_subsystems[col].notnull()]:
+    possible_subsystems.add(str(x))
+
+contract_info['aanwezige_deelinstallaties'] = tuple(possible_subsystems)
 
 """
 meldingen per di_num
