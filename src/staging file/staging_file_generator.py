@@ -13,7 +13,7 @@ import pandas as pd
 
 from mapped_attribute_names import workorder_attribute_names as wan, asset_attribute_names as aan, dt_attributes
 from mapped_attribute_names import staging_file_columns1 as new_col_order
-from location_description_map import description_df
+
 
 # Changing current working dir to the src folder
 while 1:
@@ -21,6 +21,15 @@ while 1:
         break
     else:
         os.chdir('..')
+
+
+def get_description_df():
+    # Omschrijvingen tabel inlezen
+    rel_path = '..\\res\\location_description_map.json'
+    with open(rel_path, 'r') as r:
+        description_data = json.load(r)
+    # Df for the connection between the sbs/lbs numbers and their description
+    return pd.DataFrame(description_data)
 
 
 def switch_key_val(dictionary):
@@ -79,7 +88,7 @@ def update_description(map_dict, suffix):
 
 
 def get_breakdown_description(sbs_lbs):
-    global description_df
+    description_df = get_description_df()
     description = [description_df.loc[str(index), 'description']
                    for index in range(description_df.shape[0])
                    if sbs_lbs == description_df.loc[str(index), 'location']]
@@ -131,7 +140,7 @@ for index, row in raw_asset_df.iterrows():
 
     # Making a list consisting of the asset numbers that are not nan
     not_nan_asset_nums = [aa for aa in [asset_num1, asset_num2] if not pd.isnull(aa)]
-
+    print(not_nan_asset_nums)
     """
     Because we first filter out all the rows were no asset number is present (to build raw_asset_df), we can now say 
     with certainty that each row of the raw_asset_df contains at least one nested json (data of one asset number). If 
@@ -168,7 +177,10 @@ for index, row in raw_asset_df.iterrows():
     asset_row = result.merge(to_add, on='index', suffixes=(suffixes[0], suffixes[-1]))  # suffix resp. _asset1, _asset2
 
     # Adding the merged row w/ asset data to asset_df
+    print(asset_row)
     asset_df = asset_df.append(asset_row)
+
+print(asset_df.shape)
 
 """
 Hier code voor het ophalen van de omschrijving van de sbs

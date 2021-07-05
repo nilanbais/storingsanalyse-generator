@@ -41,16 +41,20 @@ class QueryMaximoDatabase:
                       variables needed to run and filter your data export result.'
         :return: The respone of the Maximo application.
         """
+        print('checking self.query and query (param)')
         if self.query is None and query is None:
             raise ValueError("You're trying to make a request without a query. Set a query before making a request.")
 
         if self.query is None and query is not None:
             self.query = query
 
+        print('build api-url')
         api_url = 'https://maximotest.tbi.nl/maximo/oslc/os/' + self.object_structure + '?'
 
+        print('making request')
         # Call the API
         response = requests.get(api_url, headers=self.headers, params=self.parameters)
+
 
         if response.status_code == 200:
             print('Success!')
@@ -58,6 +62,7 @@ class QueryMaximoDatabase:
             print('ApiError')
 
         self.response = response
+        return "Done."
 
     def _get_dump_list(self):
         if self.response is None:
@@ -87,13 +92,23 @@ class QueryMaximoDatabase:
 
     def save_response_data(self, filename=_default_file_name, query=None):
         if self.response is None:
+            print("No result from resonse yet..")
+            print("Making request ")
             self.get_response(query)
+            self.save_response_data(query)
 
         if self.response_data is None:
             self.get_response_data(query)
+            self.save_response_data(query)
 
         if self.response_data is not None and self.response is not None:
             with open(filename, 'w') as output_file:
                 json.dump(self._dump_list, output_file, indent=6)
 
             print(f"JSON object saved as {filename} at {os.getcwd()}")
+
+
+if __name__ == "__main__":
+    qmdb = QueryMaximoDatabase("bWF4YWRtaW46R21iQ1dlbkQyMDE5", "MXWO_SND")
+    query = 'siteid="CT1EN2" and worktype="COR" and reportdate>="2018-01-01T00:00:00-00:00" and reportdate<="2018-03-30T00:00:00-00:00"'
+    qmdb.get_response(query=query)

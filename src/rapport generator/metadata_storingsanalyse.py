@@ -307,4 +307,3 @@ if __name__ == '__main__':
     maand_lijst = metadata.get_month_list(exclude_month='02', exclude_year='2019')
 
     meldingen_per_di_avg = metadata.avg_yearly(dictionary=metadata.get_di_dict(di='46A-08'), exclude_year='2020')
-

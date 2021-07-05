@@ -2,7 +2,7 @@ import json
 import pandas as pd
 
 # Omschrijvingen tabel inlezen
-rel_path = f'..\\res\\location_description_map.json'
+rel_path = 'location_description_map.json'
 with open(rel_path, 'r') as r:
     description_data = json.load(r)
 
