@@ -54,15 +54,21 @@ while 1:
 
 # Todo: OPTIE uitzoeken of het nuttig is om hier een class voor te maken.
 
-def get_first_key(dictionary):
+def get_first_key(dictionary: dict) -> dict:
     return list(dictionary.keys())[0]
 
 
-def del_empty_keys(dictionary):
+def del_empty_keys(dictionary: dict) -> dict:
+    """
+    The tabs that are read have a pre-defined table. This results in some empty dicts with key names that represent
+    future months
+    :param dictionary:
+    :return: Dict without
+    """
     return {key: dictionary[key] for key in dictionary.keys() if dictionary[key] != {}}
 
 
-def clean_dt_object(dt_string):
+def clean_dt_string(dt_string: str) -> str:
     month_notation = ['Jan', 'Feb', 'Mrt', 'Apr', 'Mei', 'Jun', 'Jul', 'Aug', 'Sept', 'Okt', 'Nov', 'Dec']
     month_notation = {month_notation[idx]: str(idx + 1) for idx in range(len(month_notation))}
 
@@ -75,18 +81,22 @@ def clean_dt_object(dt_string):
 
 
 # Vooraf gedefinieerde json variabele
-project = 'Sluis Eefde'
+project = 'Coentunnel-tracé'
+
 contract_info = {"tijdsregistratie": "True",
                  "minimale_beschikbaarheid": "xx",
                  "minimale_responsetijd": "04:00:00"}
 
 # Full path to input file
-file_input = 'metadata//L2T Sluis Eefde - Q4 2020 kwartaalrapportage.xlsx'
+file_input = 'metadata//20210505 Storingsdatabase Q1 2021.xlsx'
 excel_file = pd.ExcelFile(file_input)
 
-inputdata_meldingen = pd.read_excel(excel_file, excel_file.sheet_names[0])
-inputdata_storingen = pd.read_excel(excel_file, excel_file.sheet_names[1])
-inputdata_subsystems = pd.read_excel(excel_file, 'Onterechte meldingen totaal')
+# inputdata_meldingen = pd.read_excel(excel_file, excel_file.sheet_names[0])
+# inputdata_storingen = pd.read_excel(excel_file, excel_file.sheet_names[1])
+inputdata_subsystems = pd.read_excel(excel_file, list(filter(lambda x: x.lower() == 'onterechte meldingen totaal', excel_file.sheet_names))[0])
+
+inputdata_meldingen = pd.read_excel(excel_file, list(filter(lambda x: x.lower() == 'trend maand meldingen', excel_file.sheet_names))[0])
+inputdata_storingen = pd.read_excel(excel_file, list(filter(lambda x: x.lower() == 'trend maand storingen', excel_file.sheet_names))[0])
 
 """
 Possible subsystem numbers
@@ -104,6 +114,7 @@ contract_info['aanwezige_deelinstallaties'] = tuple(possible_subsystems)
 meldingen per di_num
 di_num = SBS sub-systeem code
 """
+# Todo: aanpassen zodat meldingen zonder di_num ook worden meegenomen.
 meldingen_data = inputdata_meldingen.iloc[:-3, :]  # onderste 3 rijen zijn overbodig
 
 # Lege dict voor alle meldingen per maand. maand in meldingen wordt dict (maand) in dict (meldingen).
@@ -115,7 +126,7 @@ for col in meldingen_data.iloc[:, 4:]:  # mask on df gives only the columns w/ m
     if meldingen_data[col][0] == "Totaal":  # last column after the months in the df
         break
     else:
-        dt_obj = clean_dt_object(meldingen_data[col][0])
+        dt_obj = clean_dt_string(meldingen_data[col][0])
         # initialize empty dict for month
         if dt_obj not in meldingen:
             meldingen[dt_obj] = {}  # Creates an empty dict w/ month as key in the meldingen dict
@@ -141,7 +152,7 @@ for col in storingen_data.iloc[:, 4:]:  # mask on df gives only the columns w/ m
     if storingen_data[col][0] == "Totaal":  # last column after the months in the df
         break
     else:
-        dt_obj = clean_dt_object(storingen_data[col][0])
+        dt_obj = clean_dt_string(storingen_data[col][0])
         # initialize empty dict for month
         if dt_obj not in storingen:
             storingen[dt_obj] = {}  # Creates an empty dict w/ month as key in the storingen dict

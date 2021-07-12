@@ -58,6 +58,11 @@ class MetadataStoringsAnalyse:
     _filepath_dict = {"Coentunnel-tracé": "metadata_file_coentunnel-tracé.json",
                       "Sluis Eefde": "metadata_file_sluis_eefde.json"}
 
+    _quarters = {'Q1': ['01', '02', '03'],
+                 'Q2': ['04', '05', '06'],
+                 'Q3': ['07', '08', '09'],
+                 'Q4': ['10', '11', '12']}
+
     def __init__(self, project):
         self.filepath = self._get_filepath(project=project)
 
@@ -105,7 +110,7 @@ class MetadataStoringsAnalyse:
         meta = self.get_all_data()
         return meta["storingen"][0]
 
-    def get_di_dict(self, di, notification_type='meldingen'):
+    def get_di_dict(self, di: str, notification_type: str = 'meldingen') -> dict:
         """
         Module to filter the dict provided by self.meldingen() or self.storingen() on a specific di number.
         :param notification_type: specification which of the two dict to use. dtype=string
@@ -131,7 +136,13 @@ class MetadataStoringsAnalyse:
         return result_dict
 
     @staticmethod
-    def _check_first_element(dictionary):
+    def filter_dictionary_keys(dictionary: dict, keys: list) -> dict:
+        keys_to_return = set(keys)
+        result = {key: dictionary[key] for key in dictionary.keys() if key in keys_to_return}
+        return result
+
+    @staticmethod
+    def _check_first_element(dictionary: dict):
         if isinstance(dictionary, dict):
             first_element = [dictionary[key] for key in dictionary.keys()][0]
         elif isinstance(dictionary, list):
@@ -141,7 +152,7 @@ class MetadataStoringsAnalyse:
 
         return first_element
 
-    def _sum_all_values(self, dictionary):
+    def _sum_all_values(self, dictionary: dict):
         """
         Takes a dictionary and sums up all the values found in the dictionary.
         If given a dictionary of dictionaries, it will return the sum of all the values of the underlying
@@ -155,13 +166,18 @@ class MetadataStoringsAnalyse:
 
         return sum([dictionary[key] for key in dictionary.keys()])
 
-    def sum_values(self, dictionary, keys=None):
+    def sum_values(self, dictionary: dict, keys: list = None):
+        """
 
+        Gedrag nu voor het recursive deel is dat het één getal als antwoord geeft. Misschien is het voor het gebruik
+        van de module beter om te stoppen op het hoogste level van keys (stap voordat één antwoord verkregen wordt.
+        Dit kan ook een extra feature worden door het optioneel veranderen van een extra parameter.
+        :param dictionary:
+        :param keys:
+        :return:
+        """
         if keys is None:
             return self._sum_all_values(dictionary)
-
-        # check if keys is a list. If not, change it to list
-        keys = [keys] if not isinstance(keys, list) else keys
 
         first_element = self._check_first_element(dictionary=dictionary)
 
@@ -173,10 +189,10 @@ class MetadataStoringsAnalyse:
         # return sum of specific keys from dict
         return sum([self._sum_all_values(dictionary[key]) for key in dictionary.keys() if key in keys])
 
-    def _count_all_values(self, dictionary):
+    def _count_all_values(self, dictionary: dict):
         """
         Takes a dictionary and counts the number of keys found in the dictionary.
-        If given a dictionary of dictionaries, it will returns number of keys found in the top layer of the
+        If given a dictionary of dictionaries, it will return number of keys found in the top layer of the
         dictionary.
         :param dictionary:
         :return:
@@ -188,7 +204,7 @@ class MetadataStoringsAnalyse:
 
         return len([dictionary[key] for key in dictionary.keys()])
 
-    def count_values(self, dictionary, keys=None):
+    def count_values(self, dictionary: dict, keys=None):
         if keys is None:
             return self._count_all_values(dictionary)
         # check if keys is a list. If not, change it to list
@@ -196,13 +212,13 @@ class MetadataStoringsAnalyse:
         # return sum of specific keys from dict
         return len([self._count_all_values(dictionary[key]) for key in dictionary.keys() if key in keys])
 
-    def avg_monthly(self, dictionary, keys=None):
+    def avg_monthly(self, dictionary: dict, keys=None):
         summed_values = self.sum_values(dictionary=dictionary, keys=keys)
         counted = self.count_values(dictionary=dictionary, keys=keys)
         return summed_values / counted
 
     @staticmethod
-    def _sort_keys_by_year(dictionary, exclude_year=None):
+    def _sort_keys_by_year(dictionary: dict, exclude_year=None) -> dict:
         """
         Sorts the keys of the given dictionary by years. It returns a new dictionary with setup
         {year: [keys containing year]}
@@ -222,7 +238,26 @@ class MetadataStoringsAnalyse:
                     result_dict[jaar] = [datum]
         return result_dict
 
-    def avg_yearly(self, dictionary, exclude_year=None):
+    # todo: Onderstaande heeft hetzelfde resultaat als hierboven
+    @staticmethod
+    def order_month_list_by_year(month_list: list) -> dict:
+        """
+        Takes a month_list (result from self.get_month_list()) and orders it by year
+        :param month_list:
+        :return:
+        """
+        month_list_ordered_by_year = {}
+
+        for month_year in month_list:
+            year = month_year.split('_')[-1]
+            if year not in month_list_ordered_by_year:
+                month_list_ordered_by_year[year] = [month_year]
+            else:
+                month_list_ordered_by_year[year].append(month_year)
+
+        return month_list_ordered_by_year
+
+    def avg_yearly(self, dictionary: dict, exclude_year=None):
         """
         Module calulates the yearly average number of notifications.
         :param dictionary:
@@ -237,7 +272,8 @@ class MetadataStoringsAnalyse:
 
         return sum(notifications_per_year) / len(notifications_per_year)
 
-    def get_month_list(self, notification_type='meldingen', exclude_month=None, exclude_year=None):
+    # todo: aanpassen in documentatie
+    def get_month_list(self, notification_type: str = 'melding', exclude_month: list = None, exclude_year: list = None) -> list:
         """
         Returns the list of all the keys that do not contain the specified excluded month or year.
         :param notification_type: specification of the dictionary to get the keys from. default=self.meldingen()
@@ -252,31 +288,16 @@ class MetadataStoringsAnalyse:
         if not dictionary:
             raise ValueError(f"Incorrect input value given: {notification_type}. Please choose one of the following notification types: 'meldingen', 'storingen'.")
 
-        _set_months = exclude_month if isinstance(exclude_month, list) \
-            else [exclude_month] if exclude_month is not None \
-            else []
-        _set_years = exclude_year if isinstance(exclude_year, list) \
-            else [exclude_year] if exclude_year is not None \
-            else []
+        _set_months = set(exclude_month) if exclude_month is not None else set()
+        _set_years = set(exclude_year) if exclude_year is not None else set()
 
-        if _set_months == [] and _set_years == []:  # no values given to exclude
-            return [key for key in dictionary.keys()]
-        elif _set_months == [] and _set_years != []:  # no month given
-            return [key for key in dictionary.keys() for _sy in _set_years if key.split('_')[-1] not in _sy]
-        elif _set_months != [] and _set_years == []:  # no year given
-            return [key for key in dictionary.keys() for _sm in _set_months if key.split('_')[0] not in _sm]
-        else:  # both year and month given
-            return [key for key in dictionary.keys() for _sm in _set_months for _sy in _set_years
-                    if (key.split('_')[0] not in _sm and key.split('_')[-1] not in _sy)]
+        return [key for key in dictionary.keys() if (key.split('_')[0] not in _set_months and
+                                                     key.split('_')[-1] not in _set_years)]
 
 
 if __name__ == '__main__':
     import os
-    while 1:
-        if os.getcwd().endswith('storingsanalyse-generator'):
-            break
-        else:
-            os.chdir('..')
+    os.chdir('..\\rapport generator')
 
     project = 'coentunnel'
     metadata = MetadataStoringsAnalyse(project)
@@ -291,7 +312,7 @@ if __name__ == '__main__':
     oktober = [key for key in meldingen.keys() if "10" in key[:3]]
 
     aantal_storingen_2019 = metadata.sum_values(dictionary=storingen, keys=data2019)  # 166
-    aantal_meldingen_maart_2018 = metadata.sum_values(dictionary=meldingen, keys='03_2018')  # 27
+    aantal_meldingen_maart_2018 = metadata.sum_values(dictionary=meldingen, keys=['03_2018'])  # 27
     lijst_meldingen_oktober = [metadata.sum_values(dictionary=meldingen, keys=key) for key in oktober]
 
     meling_ = metadata.count_values(dictionary=meldingen, keys='03_2018')
@@ -304,6 +325,10 @@ if __name__ == '__main__':
 
     avg_mod = metadata.avg_yearly(dictionary=meldingen, exclude_year=['2020'])
 
-    maand_lijst = metadata.get_month_list(exclude_month='02', exclude_year='2019')
+    maand_lijst = metadata.get_month_list(exclude_month=['02'], exclude_year=['2019'])
 
     meldingen_per_di_avg = metadata.avg_yearly(dictionary=metadata.get_di_dict(di='46A-08'), exclude_year='2020')
+
+    months_to_exclude = [metadata._quarters[q][i] for q in metadata._quarters.keys() if q != 'Q1' for i in
+                         range(len(metadata._quarters[q]))]
+    month_list = metadata.get_month_list(exclude_month=months_to_exclude)

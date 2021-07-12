@@ -8,7 +8,7 @@ import json
 from datetime import datetime
 
 
-# Todo: documentatie schrijven voor class
+# Todo: documentatie voor class aanpassen zodat duidelijk wordt wat return is of wat beïnvloed wordt
 class QueryMaximoDatabase:
 
     # class variable

@@ -100,7 +100,7 @@ dt_attributes = ['gmbctschcodering24', 'targstartdate', 'schedstart', 'actstart'
                  'gmbctschcodering35', 'gmbctschcodering33', 'gmbctschcodering36', 'gmbctschcodering37']
 
 
-# todo: OPTIE Documentatie schrijven voor class
+# Todo: documentatie voor class aanpassen zodat duidelijk wordt wat return is of wat beïnvloed wordt
 class StagingFileBuilder:
 
     # Class variables (callable by using class_name.var_name)
