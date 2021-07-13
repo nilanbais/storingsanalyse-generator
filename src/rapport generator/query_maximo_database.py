@@ -9,6 +9,7 @@ from datetime import datetime
 
 
 # Todo: documentatie voor class aanpassen zodat duidelijk wordt wat return is of wat beïnvloed wordt
+# todo: api_get_request OSLC request maximo o.i.d.
 class QueryMaximoDatabase:
 
     # class variable

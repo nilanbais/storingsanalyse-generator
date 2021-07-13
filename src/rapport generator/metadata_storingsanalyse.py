@@ -142,7 +142,7 @@ class MetadataStoringsAnalyse:
         return result
 
     @staticmethod
-    def _check_first_element(dictionary: dict):
+    def _check_first_element(dictionary: dict or list) -> list or np.nan:
         if isinstance(dictionary, dict):
             first_element = [dictionary[key] for key in dictionary.keys()][0]
         elif isinstance(dictionary, list):
@@ -152,7 +152,7 @@ class MetadataStoringsAnalyse:
 
         return first_element
 
-    def _sum_all_values(self, dictionary: dict):
+    def _sum_all_values(self, dictionary: dict) -> int or float:
         """
         Takes a dictionary and sums up all the values found in the dictionary.
         If given a dictionary of dictionaries, it will return the sum of all the values of the underlying
@@ -164,7 +164,7 @@ class MetadataStoringsAnalyse:
         if isinstance(first_element, dict):
             return sum([self._sum_all_values(dictionary[key]) for key in dictionary.keys()])
 
-        return sum([dictionary[key] for key in dictionary.keys()])
+        return sum(dictionary.values())
 
     def sum_values(self, dictionary: dict, keys: list = None):
         """
@@ -238,7 +238,7 @@ class MetadataStoringsAnalyse:
                     result_dict[jaar] = [datum]
         return result_dict
 
-    # todo: Onderstaande heeft hetzelfde resultaat als hierboven
+    # todo: Onderstaande heeft hetzelfde resultaat als hierboven echter is input dtype anders
     @staticmethod
     def order_month_list_by_year(month_list: list) -> dict:
         """
