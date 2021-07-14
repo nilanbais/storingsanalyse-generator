@@ -141,7 +141,7 @@ for col in meldingen_data.iloc[:, 4:]:  # mask on df gives only the columns w/ m
 storingen per di_num
 di_num = SBS sub-systeem code
 """
-storingen_data = inputdata_storingen.iloc[:-3, :]  # onderste 3 rijen zijn overbodig
+storingen_data = inputdata_storingen.iloc[:-3, :]  # onderste 3 rijen zijn overbodig  EDIT (??is dit altijd zo??)
 
 # Lege dict voor alle storingen per maand. maand in storingen wordt dict (maand) in dict (storingen).
 # maanden worden toegevoegd in notatie [maand]-[jaar]

@@ -73,6 +73,7 @@ aan = {"sbs": "gmblocation",
 van onderstaande is de eerste gesorteerd per 1 of 2 
 de tweede is gesorteerd per data (assetnum 1&2, sbs 1&2 enz.)
 """
+# month_number is toegevoegd na rapport datum
 staging_file_columns1 = ['werkorder', 'status', 'rapport datum', 'werkorder beschrijving',
                          'asset nummer', 'asset beschrijving', 'sbs', 'sbs omschrijving', 'locatie', 'locatie omschrijving',
                          'asset nummer 2', 'asset beschrijving 2', 'sbs 2', 'sbs 2 omschrijving', 'locatie 2', 'locatie 2 omschrijving',
