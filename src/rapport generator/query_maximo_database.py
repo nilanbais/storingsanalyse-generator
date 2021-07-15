@@ -56,7 +56,6 @@ class QueryMaximoDatabase:
         # Call the API
         response = requests.get(api_url, headers=self.headers, params=self.parameters)
 
-
         if response.status_code == 200:
             print('Success!')
         elif response.status_code == 404:

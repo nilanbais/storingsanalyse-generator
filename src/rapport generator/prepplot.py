@@ -1,19 +1,31 @@
 """
 Class voor het preppen en plotten van de grafieken.
 
-Het idee van de class is dat er een object met een standaard datasturctuur als input gebruikt wordt. Op basis van
+Het idee van de class is dat er een object met een standaard data sturctuur als input gebruikt wordt. Op basis van
 deze datastructuur en een aantal gespecificeerde parameters moeten de verschillende grafieken geplot kunnen worden.
+
+Met behulp van deze class wil ik dat het mogelijk wordt een soort ad hoc analyse tool te maken waarbij een soort
+sandbox omgeving wordt opgezet, waarin de gebruiker aan verschillende parameters kan 'draaien' om zo een specifiek
+inzicht te krijgen (bijv. storingen van twee di nummers enkel in de maanden april en december)
 
 """
 import pandas as pd
 
 import matplotlib.pyplot as plt
 
+from datetime import datetime
+
 from pandas import DataFrame, Series
 from matplotlib.figure import Figure
 
 
 class PrepNPlot:
+
+    # Class variables (callable by using class_name.var_name)
+    _quarters = {'Q1': {'01', '02', '03'},
+                 'Q2': {'04', '05', '06'},
+                 'Q3': {'07', '08', '09'},
+                 'Q4': {'10', '11', '12'}}
 
     def __init__(self):
         self.graphs = []
@@ -38,16 +50,99 @@ class PrepNPlot:
         first_index = next(iter(input_object))
         return input_object.__getitem__(first_index)
 
-    # todo: change name to more clear name
-    def _prep_middle_step(self, input_object: (DataFrame or dict), time_key: (int or str), categorical_key: (int or str), time_range: str) -> dict:
+    @staticmethod
+    def _prep_time_range(time_range: [str, str]):
+        """
+        Returns list of datetime objects when given strings.
+        :param time_range:
+        :return:
+        """
+        seperator_set = {'_', '/', '\\', '.'}
+        new_time_range = []
+        for tr in time_range:
+
+            if any(s in tr for s in seperator_set):
+                for seperator in seperator_set:
+                    tr = tr.replace(seperator, '-')
+
+            new_time_range.append(datetime.strptime(tr, '%m-%Y'))
+
+        return new_time_range
+
+    def _get_time_range_base(self, time_range: [datetime, datetime]) -> list:
         """
 
-        :param input_object:
+        :param time_range:
         :return:
+        """
+        start_date = time_range[0]
+        end_date = time_range[-1]
+        time_range_base = []
+        for year in range(int(start_date.year), int(end_date.year) + 1):
+
+            if len(time_range_base) == 0:  # first iteration of year
+                for month in range(int(start_date.month), 13):
+                    time_range_base.append(str(month) + '_' + str(year)) if len(str(month)) > 1 \
+                        else time_range_base.append('0' + str(month) + '_' + str(year))
+                continue  # skip the rest of this iteration
+            elif year == end_date.year:  # last iteration of year
+                for month in range(1, int(end_date.month) + 1):
+                    time_range_base.append(str(month) + '_' + str(year)) if len(str(month)) > 1 \
+                        else time_range_base.append('0' + str(month) + '_' + str(year))
+                continue
+
+            for month in range(1, 13):
+                time_range_base.append(str(month) + '_' + str(year)) if len(str(month)) > 1 \
+                    else time_range_base.append('0' + str(month) + '_' + str(year))
+
+        return time_range_base
+
+    def _get_bins(self, bin_size: str, time_range: [datetime, datetime]) -> dict:
+        """
+        Returns a data structure like:
+            {'bin_1': [list of months belonging to the specified bin],
+             'bin_2': [list of months belonging to the specified bin]}
+
+        Time range needs to consist of a month and a year. If not given, the range will be [oldest know time, youngest knows time] or the module will raise and error.
+
+        :param bin_size:
+        :param time_range: time range of the bins (objects need to have a month and year).
+        :return:
+        """
+        binned_dictionary = dict()
+        _time_range_base = self._get_time_range_base(time_range=time_range)
+        if bin_size == 'quarter':
+
+            years = set([x.split('_')[-1] for x in _time_range_base])
+            for year in sorted(years):
+                for q in self._quarters.keys():
+                    key = q + '_' + year
+                    value = [x for x in _time_range_base if (x.split('_')[0] in self._quarters[q] and x.split('_')[-1] == year)]
+                    if len(value) > 0:
+                        binned_dictionary[key] = value
+                    # todo: misschien nog bericht meegeven wanneer het eerste of laatste kwartaal van
+                    #  binned_dictionary niet uit 3 maanden bestaat (kan de analyse vertroebelen)
+        elif bin_size == 'year':
+            years = set([x.split('_')[-1] for x in _time_range_base])
+            for year in sorted(years):
+                binned_dictionary[year] = [x for x in _time_range_base if x.split('_')[-1] == year]
+
+        return binned_dictionary
+
+    # todo: change name to more clear name
+    def _prep_middle_step(self, input_object: (DataFrame or dict), time_key: str, categorical_key: str, time_range: [datetime, datetime] or [str, str], bin_size: str = False) -> dict:
+        """
+
+        :param input_object: way to parse data from which all is needed to be extracted.
+        :param time_key: The key/column name in which the time is stored
+        :param categorical_key: The key/column name in which the categorical data is stored
+        :param bin_size: Bin size is a string 'quarter', 'year'
+        :param time_range: A list like [start, end] where start and end need to be both datetime objects or strings representing dates.
+        :return: Dict with structure that can be used 'as-is' in _prep_end_step()
         """
         input_object = input_object.to_dict() if isinstance(input_object, DataFrame) else input_object
         """
-        1. look at which months need to be combined to match the asked time_range (bins of years/quarters/months)
+        done 1. look at which months need to be combined to match the asked time_range (bins of years/quarters/months)
             Bellow is an example for quarter bins.
                 {'Q4_2020': ['10_2020', '11_2020', '12_2020'],
                  'Q1_2021': ['01_2021', '02_2021', '03_2021']}
@@ -55,6 +150,15 @@ class PrepNPlot:
         3. add up the counts of each category within one time bin.
         4. return
         """
+        time_range = time_range if isinstance(time_range[0], datetime) else self._prep_time_range(time_range=time_range)
+        if not bin_size:  # if no binsize is given it will return a list of all the months within the time_range
+            bins = self._get_time_range_base(time_range=time_range)
+        else:
+            bins = self._get_bins(bin_size=bin_size, time_range=time_range)
+        # todo: stap 2 schrijven (onderstaande punten horen niet bij elkaar, maar dit kan misschien eigenlijk toch wel)
+        # hoe kan je met zekerheid vaststellen wat het format is waarin je tijd genoteerd staat?
+        # zorg ook voor de meest algemene count functie.
+
         pass
 
     # todo: change name to more clear name
@@ -119,4 +223,8 @@ if __name__ == '__main__':
 
     first = pp._prep_end_step(test_input, unique_values=[_ for _ in test_input.keys()])
 
-    print(first)
+
+    x = '10-2017'
+    y = '01-2020'
+    z = pp._prep_time_range([x, y])
+    print(pp._get_bins(bin_size='quarter', time_range=z))
