@@ -53,7 +53,15 @@ class PrepNPlot:
         return input_object.__getitem__(first_index)
 
     @staticmethod
-    def _prep_time_range(time_range: [str, str]):
+    def _get_stringformat(string: str) -> str:
+        if len(string) == 17:
+            return '%d-%m-%y %H:%M:%S'
+        elif len(string) == 7:
+            return '%m-%Y'
+        else:
+            raise ValueError(f"Unknown input format of the datetime string. Input string: {string}")
+
+    def _prep_time_range(self, time_range: [str, str]):
         """
         Returns list of datetime objects when given strings.
         :param time_range:
@@ -69,7 +77,10 @@ class PrepNPlot:
                 for seperator in seperator_set:
                     tr = tr.replace(seperator, '-')
 
-            str_format = '%m-%Y' if len(tr) == 7 else '%d-%m-%y %H:%M:%S' if len(tr) == 17 else None
+            if len(tr) == 6 and tr.index('-', 0, 4) == 1:
+                tr = '0' + tr  # changing 3-2020 to 03-2020
+
+            str_format = self._get_stringformat(tr)
             new_time_range.append(datetime.strptime(tr, str_format))
 
         return new_time_range
@@ -173,11 +184,12 @@ class PrepNPlot:
         :param categorical_key:
         :return:
         """
+        _input_object = input_object.reset_index()
         result_dict = dict()
-        for index in range(len(input_object[time_key])):
+        for index in range(len(_input_object[time_key])):
 
-            rapport_time = datetime.strptime(input_object[time_key][index], '%d-%m-%y %H:%M:%S') \
-                if isinstance(input_object[time_key][index], str) else input_object[time_key][index]
+            rapport_time = datetime.strptime(_input_object[time_key][index], '%d-%m-%y %H:%M:%S') \
+                if isinstance(_input_object[time_key][index], str) else _input_object[time_key][index]
 
             month_str = str(rapport_time.month) if rapport_time.month > 9 else '0' + str(rapport_time.month)
             result_dict_key = month_str + '_' + str(rapport_time.year)
@@ -185,18 +197,83 @@ class PrepNPlot:
             if result_dict_key not in result_dict.keys():
                 result_dict[result_dict_key] = {}
 
-            if input_object[categorical_key][index] not in result_dict[result_dict_key]:
-                result_dict[result_dict_key][input_object[categorical_key][index]] = 1
+            if _input_object[categorical_key][index] not in result_dict[result_dict_key]:
+                result_dict[result_dict_key][_input_object[categorical_key][index]] = 1
             else:
-                result_dict[result_dict_key][input_object[categorical_key][index]] += 1
+                result_dict[result_dict_key][_input_object[categorical_key][index]] += 1
 
         return result_dict
+
+    @staticmethod
+    def build_output_first_step(input_object: dict, available_categories: List[str], bins: Union[dict, None]) -> dict:
+        output_dict = dict()
+        if bins:
+            for bin_key in bins.keys():
+                bin_dict = {}  # dictionary that is refeshed for each iteration of bin_key
+                for month_key in input_object.keys():
+                    if month_key in bins[bin_key]:
+                        _temp_dict = input_object[month_key].copy()
+
+                        for key in sorted(available_categories):
+                            _temp_dict[key] = 0 if key not in _temp_dict.keys() else _temp_dict[key]  # adding the missing categories to the dict
+
+                        if np.nan in _temp_dict.keys():
+                            _temp_dict.pop(np.nan)
+
+                        temp_dict = {key: _temp_dict[key] for key in sorted(_temp_dict.keys())}
+                        bin_dict[month_key] = temp_dict
+                    else:
+                        pass
+                if len(bin_dict.keys()) > 0:
+                    output_dict[bin_key] = bin_dict
+                else:
+                    pass
+        else:
+            for month_key in input_object.keys():
+                _temp_dict = input_object[month_key].copy()
+                for key in sorted(available_categories):
+                    _temp_dict[key] = 0 if key not in _temp_dict.keys() else _temp_dict[key]  # adding the missing categories to the dict
+
+                if np.nan in _temp_dict.keys():
+                    print(f'{month_key} nan pop. count = {_temp_dict[np.nan]}')
+                    _temp_dict.pop(np.nan)
+
+                temp_dict = {key: _temp_dict[key] for key in sorted(_temp_dict.keys())}
+                output_dict[month_key] = temp_dict
+
+        return output_dict
 
     # todo: change name to more clear name
     def _prep_first_step(self, input_object: Union[Tuple[DataFrame, str, str], dict], time_range: Union[List[datetime], List[str]], available_categories: List[str], bin_size: Optional[str] = None) -> dict:
         """
+        Builds a dictionary with the following structure:
+            {'key_1':
+                {'key_11':
+                    {key_111: value_111, key_112: value_112, ..., key_11n: value_11n},
+                'key_12':
+                    {key_121: value_121, key_122: value_122, ..., key_12n: value_12n},
+                'key_13':
+                    {key_131: value_131, key_132: value_132, ..., key_13n: value_13n}
+                },
+            'key_2':
+                {'key_21':
+                    {key_211: value_211, key_212: value_212, ..., key_21n: value_21n},
+                'key_22':
+                    {key_221: value_221, key_222: value_222, ..., key_22n: value_22n},
+                'key_23':
+                    {key_231: value_231, key_232: value_232, ..., key_23n: value_23n}
+                     },
+            'key_3':
+                {'key_31':
+                    {key_311: value_311, key_312: value_312, ..., key_31n: value_31n},
+                'key_32':
+                    {key_321: value_321, key_322: value_322, ..., key_32n: value_32n},
+                'key_33':
+                    {key_331: value_331, key_332: value_332, ..., key_33n: value_33n}
+                     }
+            }
 
-        :param input_object: way to parse data from which all is needed to be extracted.
+        :param input_object: a full dataset from which all the specific data is needed to be extracted.
         :param time_key: The key/column name in which the time is stored
         :param categorical_key: The key/column name in which the categorical data is stored
         :param bin_size: Bin size is a string 'quarter', 'year'
@@ -216,30 +293,15 @@ class PrepNPlot:
         if bin_size:  # if no binsize is given it will return a list of all the months within the time_range
             bins = self._get_bins(bin_size=bin_size, time_range=time_range)
         else:
-            return input_object  # input after the transformation to meta is the correct dict if no bins are needed
+            bins = None
 
         # building output dict based on the bins dict
-        output_dict = dict()
-        for bin_key in bins.keys():
-            bin_dict = {}  # dictionary that is refeshed for each iteration of bin_key
-
-            for month_key in input_object.keys():
-                if month_key in bins[bin_key]:
-                    _temp_dict = input_object[month_key].copy()
-                    for key in sorted(available_categories):
-                        _temp_dict[key] = 0 if key not in _temp_dict.keys() else _temp_dict[key]  # adding the missing categories to the dict
-                    bin_dict[month_key] = _temp_dict
-                else:
-                    pass
-
-            if len(bin_dict.keys()) > 0:
-                output_dict[bin_key] = bin_dict
-            else:
-                pass
+        output_dict = self.build_output_first_step(input_object, available_categories, bins)
 
         return output_dict
 
-    def _prep_second_step(self, input_dict: dict) -> dict:
+    @staticmethod
+    def _prep_second_step(input_dict: dict) -> dict:
         """
         This preperation action that changes the following to the data structure presented after the next, by adding
         up the values of each third level key (key_1x1)
@@ -337,9 +399,30 @@ class PrepNPlot:
 
         return data
 
+    def _prep_end_step_summary(self, input_dict: dict) -> int:
+        """
+        Module that counts the times a value has been seen in a bin.
+        It is save to assume that the main level of keys are the dict names.
+        Input is the output of step two.
+        """
+        if all([isinstance(value, int) for value in input_dict.values()]):
+            return sum(input_dict.values())
+
+        output_dict = input_dict.copy()
+        for key, value in input_dict.items():
+            if isinstance(value, dict):
+                output_dict[key] = self._prep_end_step_summary(value)  # value being the new input dict
+
+        return self._prep_end_step_summary(output_dict)
+
     def prep(self, input_object: Union[DataFrame, dict], time_range: [datetime, datetime] or [str, str], available_categories: List[str], category_key: Optional[str] = None, time_key: Optional[str] = None, bin_size: Optional[str] = False) -> list:
         # todo: Het kan zijn dat de functie gebruikt wordt en dat er geen time_range gespecificeerd kan worden
         #  (of dat men dat niet wil) dus er moet nog iets komen voor deze situaties
+
+        # todo: filter als laatste stap. In deze stap moeten de keys die in geen enkele lijst van de lijst van
+        #  lijsten voorkomt, worden verwijderd uit de dictionary.
+
+        # todo: Module schrijven voor functionaliteit dat kwartalen van verschillende jaren vergeleken kunnen worden.
 
         _input_object = (input_object, time_key, category_key) if isinstance(input_object, DataFrame) else input_object
 
@@ -352,7 +435,55 @@ class PrepNPlot:
 
         self.last_seen_bin_names = list(result_step_two.keys())
 
+        """
+        onderstaande stap wordt niet gesorteerd op aanwezige categorieën, kijk of dit nog ingebouwd kan worden.
+        """
         result_step_three = self._prep_end_step(input_dict=result_step_two, bin_names=self.last_seen_bin_names)
+
+        return result_step_three
+
+    def test_prep(self, input_object: Union[DataFrame, dict], time_range: [datetime, datetime] or [str, str], available_categories: List[str], category_key: Optional[str] = None, time_key: Optional[str] = None, bin_size: Optional[str] = False) -> list:
+        # todo: Het kan zijn dat de functie gebruikt wordt en dat er geen time_range gespecificeerd kan worden
+        #  (of dat men dat niet wil) dus er moet nog iets komen voor deze situaties
+
+        # todo: filter als laatste stap. In deze stap moeten de keys die in geen enkele lijst van de lijst van
+        #  lijsten voorkomt, worden verwijderd uit de dictionary.
+
+        _input_object = (input_object, time_key, category_key) if isinstance(input_object, DataFrame) else input_object
+
+        print(f"_input_object:\n{_input_object}")
+
+        result_step_one = self._prep_first_step(_input_object, time_range, available_categories, bin_size)
+        print(f"result step one:\n{result_step_one}")
+
+        if not bin_size:  # when no bin_size is given, the month_keys represent the bin_size aka no second step needed
+            result_step_two = result_step_one
+        else:
+            result_step_two = self._prep_second_step(input_dict=result_step_one)
+        print(f"result step two:\n{result_step_two}")
+
+        self.last_seen_bin_names = list(result_step_two.keys())
+
+        result_step_three = self._prep_end_step(input_dict=result_step_two, bin_names=self.last_seen_bin_names)
+        print(f"result step three:\n{result_step_three}")
+
+        return result_step_three
+
+    def prep_summary(self, input_object: Union[DataFrame, dict], time_range: [datetime, datetime] or [str, str], available_categories: List[str], category_key: Optional[str] = None, time_key: Optional[str] = None, bin_size: Optional[str] = False) -> dict:
+        _input_object = (input_object, time_key, category_key) if isinstance(input_object, DataFrame) else input_object
+
+        result_step_one = self._prep_first_step(_input_object, time_range, available_categories, bin_size)
+
+        if not bin_size:  # when no bin_size is given, the month_keys represent the bin_size aka no second step needed
+            result_step_two = result_step_one
+        else:
+            result_step_two = self._prep_second_step(input_dict=result_step_one)
+
+        self.last_seen_bin_names = list(result_step_two.keys())
+
+        result_step_three = dict()
+        for key in self.last_seen_bin_names:
+            result_step_three[key] = self._prep_end_step_summary(input_dict=result_step_two[key])
 
         return result_step_three
 
@@ -360,10 +491,18 @@ class PrepNPlot:
     Plot modules -- Modules that focus on setting up the parameters for plotting and plotting of the figure.
     """
     def plot(self, input_data: List[list], plot_type: str, category_labels: list, bin_labels: list) -> None:
-        x_labels = category_labels
-        x_locations = np.arange(len(x_labels))
+        """
+        Takes the result of prep and plots it.
+        :param input_data:
+        :param plot_type:
+        :param category_labels:
+        :param bin_labels:
+        :return:
+        """
+        x_labels = sorted(category_labels)
+        x_locations = np.arange(len(x_labels))  # todo: aanpassen van het automatisch bepalen
 
-        legend_names = list(bin_labels)
+        legend_names = list(bin_labels)  # todo: bin labels omvormen tot iets leesbaars (03_2018 -> maart 2018)
 
         fig, axis = plt.subplots(figsize=(len(x_labels), 5))
 
@@ -406,6 +545,24 @@ class PrepNPlot:
         axis.legend()
 
         # fig.autofmt_xdate(rotation=45)
+
+        plt.show()
+
+    @staticmethod
+    def plot_summary(input_data: dict) -> None:
+        """
+        Takes the result of prep_summary and plots it.
+        :param input_data:
+        :return:
+        """
+        fig, axis = plt.subplots()
+        axis.bar(input_data.keys(), input_data.values(), width=0.3)
+        axis.set_ylabel('Aantal')
+        axis.set_title("Aantal meldingen per maand")  # todo: veranderen naar meldingen per {bin_size}
+        axis.margins(x=.2, y=.2)
+
+        axis.set_axisbelow(True)
+        axis.grid(axis='y', linestyle='--')
 
         plt.show()
 

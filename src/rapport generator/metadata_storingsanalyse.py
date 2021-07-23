@@ -41,6 +41,8 @@ Fucnties/Modules die geschreven moeten worden, zijn:
 import json
 import pandas as pd
 import numpy as np
+
+from typing import Union, List
 # Todo: ONDERSTAANDE AANPASSING STERK OVERWEGEN
 """
 Aanpassing:
@@ -136,12 +138,6 @@ class MetadataStoringsAnalyse:
         return result_dict
 
     @staticmethod
-    def filter_dictionary_keys(dictionary: dict, keys: list) -> dict:
-        keys_to_return = set(keys)
-        result = {key: dictionary[key] for key in dictionary.keys() if key in keys_to_return}
-        return result
-
-    @staticmethod
     def _check_first_element(dictionary: dict or list) -> list or np.nan:
         if isinstance(dictionary, dict):
             first_element = [dictionary[key] for key in dictionary.keys()][0]
@@ -212,13 +208,13 @@ class MetadataStoringsAnalyse:
         # return sum of specific keys from dict
         return len([self._count_all_values(dictionary[key]) for key in dictionary.keys() if key in keys])
 
-    def avg_monthly(self, dictionary: dict, keys=None):
-        summed_values = self.sum_values(dictionary=dictionary, keys=keys)
-        counted = self.count_values(dictionary=dictionary, keys=keys)
+    def avg_monthly(self, dictionary: dict, exclude_keys=None):
+        summed_values = self.sum_values(dictionary=dictionary, keys=exclude_keys)
+        counted = self.count_values(dictionary=dictionary, keys=exclude_keys)
         return summed_values / counted
 
     @staticmethod
-    def _sort_keys_by_year(dictionary: dict, exclude_year=None) -> dict:
+    def _sort_keys_by_year(dictionary: dict, exclude_year: Union[List[str], str] = None) -> dict:
         """
         Sorts the keys of the given dictionary by years. It returns a new dictionary with setup
         {year: [keys containing year]}
@@ -257,7 +253,7 @@ class MetadataStoringsAnalyse:
 
         return month_list_ordered_by_year
 
-    def avg_yearly(self, dictionary: dict, exclude_year=None):
+    def avg_yearly(self, dictionary: dict, exclude_year: Union[List[str], str] = None) -> float:
         """
         Module calulates the yearly average number of notifications.
         :param dictionary:
@@ -272,8 +268,40 @@ class MetadataStoringsAnalyse:
 
         return sum(notifications_per_year) / len(notifications_per_year)
 
+    def _sort_keys_by_quarters(self, dictionary: dict):
+        """
+
+        :param dictionary:
+        :return:
+        """
+        result_dict = dict()
+        for date in dictionary.keys():
+            month, year = date.split('_')
+            for quarter in self._quarters.keys():
+                key = f'{quarter}_{year}'
+                if month in self._quarters[quarter]:
+                    if key in result_dict:
+                        result_dict[key].append(date)
+                    else:
+                        result_dict[key] = [date]
+
+        return result_dict
+
+    # todo: documenteren
+    def avg_quarterly(self, dictionary: dict, exclude_quarter: Union[List[str], str] = None) -> float:
+        # sort dict per quarter
+        # notifications_per_quarter like: [q1_year_1, q2_year_1, ..., q4_year_n]
+        # return sum() / len()
+        sorted_keys = self._sort_keys_by_quarters(dictionary=dictionary)
+        # Bellow gives a list like [avg_q_year_1, avg_q2_year_1, ... , avg_q4_year_n]
+        notifications_per_q = [self.sum_values(dictionary=dictionary, keys=sorted_keys[q]) for q in sorted_keys.keys()]  # ook te schrijven als keys=[val for val in sorted_keys.values()]
+        if len(notifications_per_q) == 0:
+            return int(0)
+        return sum(notifications_per_q) / len(notifications_per_q)
+
     # todo: aanpassen in documentatie
-    def get_month_list(self, notification_type: str = 'melding', exclude_month: list = None, exclude_year: list = None) -> list:
+    # todo: exclude_quarter inbouwen
+    def get_month_list(self, notification_type: str = 'melding', exclude_month: Union[List[str], str] = None, exclude_quarter: Union[List[str], str] = None, exclude_year: Union[List[str], str] = None) -> list:
         """
         Returns the list of all the keys that do not contain the specified excluded month or year.
         :param notification_type: specification of the dictionary to get the keys from. default=self.meldingen()
@@ -290,9 +318,41 @@ class MetadataStoringsAnalyse:
 
         _set_months = set(exclude_month) if exclude_month is not None else set()
         _set_years = set(exclude_year) if exclude_year is not None else set()
+        _set_quarter = set(self._quarter_to_month_numbers(exclude_quarter)) if exclude_quarter is not None else set()
 
-        return [key for key in dictionary.keys() if (key.split('_')[0] not in _set_months and
+        return [key for key in dictionary.keys() if ((key.split('_')[0] not in (_set_months or _set_quarter)) and
                                                      key.split('_')[-1] not in _set_years)]
+
+    # todo: documenteren
+    @staticmethod
+    def filter_dictionary_keys(dictionary: dict, keys: list) -> dict:
+        """
+        Sort of the same functionality as get_month_list, but instead of returning a list with the keynames it returns
+        a filtered dictinary.
+        :param dictionary:
+        :param keys:
+        :return:
+        """
+        keys_to_return = set(keys)
+        result = {key: dictionary[key] for key in dictionary.keys() if key in keys_to_return}
+        return result
+
+    def _quarter_to_month_numbers(self, quarters: Union[List[str], str]) -> list:
+        """
+        Returns the corresponding months of the given quarters
+        :param quarter:
+        :return:
+        """
+        if isinstance(quarters, str):
+            return self._quarters.__getitem__(quarters.capitalize())
+
+        list_to_return = []
+        nums = [val for key, val in self._quarters.items() for q in quarters if key == q.capitalize()]
+        for n in nums:
+            for num in n:
+                list_to_return.append(num)
+
+        return list_to_return
 
 
 if __name__ == '__main__':
@@ -318,8 +378,8 @@ if __name__ == '__main__':
     meling_ = metadata.count_values(dictionary=meldingen, keys='03_2018')
     storingen_2019 = metadata.count_values(dictionary=storingen, keys=data2019)
 
-    avg_oktober = metadata.avg_monthly(dictionary=meldingen, keys=oktober)
-    avg_2019 = metadata.avg_monthly(dictionary=storingen, keys=data2019)
+    avg_oktober = metadata.avg_monthly(dictionary=meldingen, exclude_keys=oktober)
+    avg_2019 = metadata.avg_monthly(dictionary=storingen, exclude_keys=data2019)
 
     data_61_mod = metadata.get_di_dict(notification_type='meldingen', di='61')
 
@@ -332,3 +392,9 @@ if __name__ == '__main__':
     months_to_exclude = [metadata._quarters[q][i] for q in metadata._quarters.keys() if q != 'Q1' for i in
                          range(len(metadata._quarters[q]))]
     month_list = metadata.get_month_list(exclude_month=months_to_exclude)
+
+    kwartaal_lijst=['q1', 'q3']
+    mmlijst = metadata._quarter_to_month_numbers(quarters=kwartaal_lijst)
+    test_q_m_list = metadata.get_month_list(exclude_quarter='q3')
+    sort_by_q = metadata._sort_keys_by_quarters(dictionary=metadata.meldingen())
+    avg_q = metadata.avg_quarterly(dictionary=metadata.meldingen())

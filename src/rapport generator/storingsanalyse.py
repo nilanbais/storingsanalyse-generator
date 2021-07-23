@@ -22,17 +22,19 @@ import pandas as pd
 from stagingfile_class import StagingFileBuilder
 from metadata_storingsanalyse import MetadataStoringsAnalyse
 from query_maximo_database import QueryMaximoDatabase
+from prepnplot import PrepNPlot
 
 
 # Todo: documentatie schrijven voor class
 # Todo: Kijken hoe het type rapport (kwartaal of jaar) ingebouwd moet worden (wss als extra parameter bij aanmaken \
 #  instance o.i.d.)
-class StoringsAnalyse:
+class StoringsAnalyse(PrepNPlot):
 
     # Class variables (callable by using class_name.var_name)
     _ld_map_path = "..\\..\\res\\location_description_map.json"  # location_description_map
 
-    def __init__(self, project, api_key, object_structure):
+    def __init__(self, project, api_key, object_structure) -> None:
+        super(PrepNPlot, self).__init__()
         self.metadata = MetadataStoringsAnalyse(project)
 
         self._maximo = QueryMaximoDatabase(api_key, object_structure)
@@ -42,9 +44,8 @@ class StoringsAnalyse:
         self.staging_file_name = None  # set by build_staging_file
         self.staging_file_path = None  # set by get_staging_file
         self.staging_file_data = None  # set by get_staging_file
-
-        self.meldingen = None
-        self.storingen = None
+        self.meldingen = None  # set by split_staging_file
+        self.storingen = None  # set by split_staging_file
 
         # todo: aanpassen zodat geen df maar een dict o.i.d. wordt gebruikt als dtype van de attribute
         self._ld_map = self._read_ld_map()  # df with the mapped location and description
@@ -184,6 +185,3 @@ class StoringsAnalyse:
 
     def plot_ntype_per_maand(self, ntype='meldingen'):
         pass
-    
-# Todo: functionaliteit toevoegen voor het verkrijgen van de datapunten die moeten worden gepresenteerd in
-#  de storingsanalyse
