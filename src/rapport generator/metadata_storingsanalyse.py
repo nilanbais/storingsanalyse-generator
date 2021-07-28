@@ -112,6 +112,11 @@ class MetadataStoringsAnalyse:
         meta = self.get_all_data()
         return meta["storingen"][0]
 
+    # todo: toevoegen aan documentatie + de aanpassing in de objectstructuur van de metadata documenteren
+    def poo_data(self):
+        meta = self.get_all_data()
+        return meta["poo_codes"][0]
+
     def get_di_dict(self, di: str, notification_type: str = 'meldingen') -> dict:
         """
         Module to filter the dict provided by self.meldingen() or self.storingen() on a specific di number.
@@ -300,7 +305,7 @@ class MetadataStoringsAnalyse:
         return sum(notifications_per_q) / len(notifications_per_q)
 
     # todo: aanpassen in documentatie
-    # todo: exclude_quarter inbouwen
+    # todo: finctie omschrijven zodat het werkt via => 'geeft me resultaten van maart' of 'geeft alleen Q4' (van alle jaren)
     def get_month_list(self, notification_type: str = 'melding', exclude_month: Union[List[str], str] = None, exclude_quarter: Union[List[str], str] = None, exclude_year: Union[List[str], str] = None) -> list:
         """
         Returns the list of all the keys that do not contain the specified excluded month or year.
@@ -323,9 +328,26 @@ class MetadataStoringsAnalyse:
         return [key for key in dictionary.keys() if ((key.split('_')[0] not in (_set_months or _set_quarter)) and
                                                      key.split('_')[-1] not in _set_years)]
 
+    def get_keys(self, dictionary: dict,  containing_months: Union[List[str], str] = None, containing_quarter: Union[List[str], str] = None, containing_year: Union[List[str], str] = None) -> list:
+        """
+        Returns a list of the different keys containing the months, months of a quarter, or the year specified.
+        (Note that this module is the complete opposite of self.get_month_list().
+        :param dictionary:
+        :param containing_months:
+        :param containing_quarter:
+        :param containing_year:
+        :return:
+        """
+        _set_months = set(containing_months) if containing_months is not None else set()
+        _set_years = set(containing_year) if containing_year is not None else set()
+        _set_quarter = set(self._quarter_to_month_numbers(containing_quarter)) if containing_quarter is not None else set()
+
+        return [key for key in dictionary.keys() if ((key.split('_')[0] in (_set_months or _set_quarter)) and
+                                                     key.split('_')[-1] in _set_years)]
+
     # todo: documenteren
     @staticmethod
-    def filter_dictionary_keys(dictionary: dict, keys: list) -> dict:
+    def filter_dictionary_keys(dictionary: dict, keys: List[str]) -> dict:
         """
         Sort of the same functionality as get_month_list, but instead of returning a list with the keynames it returns
         a filtered dictinary.
@@ -398,3 +420,6 @@ if __name__ == '__main__':
     test_q_m_list = metadata.get_month_list(exclude_quarter='q3')
     sort_by_q = metadata._sort_keys_by_quarters(dictionary=metadata.meldingen())
     avg_q = metadata.avg_quarterly(dictionary=metadata.meldingen())
+
+    poo = metadata.poo_data()['probleem']
+    print([metadata.sum_values(dictionary=poo[_], keys=['P05']) for _ in poo.keys()])

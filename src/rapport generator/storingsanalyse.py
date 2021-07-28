@@ -34,7 +34,8 @@ class StoringsAnalyse(PrepNPlot):
     _ld_map_path = "..\\..\\res\\location_description_map.json"  # location_description_map
 
     def __init__(self, project, api_key, object_structure) -> None:
-        super(PrepNPlot, self).__init__()
+        PrepNPlot.__init__(self)
+
         self.metadata = MetadataStoringsAnalyse(project)
 
         self._maximo = QueryMaximoDatabase(api_key, object_structure)

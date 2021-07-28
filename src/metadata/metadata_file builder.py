@@ -44,6 +44,8 @@ import os
 import numpy as np
 from datetime import datetime
 
+from pandas import DataFrame
+
 # Changing current working dir to the src folder
 while 1:
     if os.getcwd().endswith('src'):
@@ -68,7 +70,7 @@ def del_empty_keys(dictionary: dict) -> dict:
     return {key: dictionary[key] for key in dictionary.keys() if dictionary[key] != {}}
 
 
-def clean_dt_string(dt_string: str) -> str:
+def clean_dt_string_month(dt_string: str) -> str:
     month_notation = ['Jan', 'Feb', 'Mrt', 'Apr', 'Mei', 'Jun', 'Jul', 'Aug', 'Sept', 'Okt', 'Nov', 'Dec']
     month_notation = {month_notation[idx]: str(idx + 1) for idx in range(len(month_notation))}
 
@@ -80,23 +82,55 @@ def clean_dt_string(dt_string: str) -> str:
     return dt_string
 
 
-# Vooraf gedefinieerde json variabele
-project = 'Coentunnel-tracé'
+def clean_dt_string_q(dt_string: str) -> str:
+    return dt_string.replace('-', '_').replace(' ', '')
 
-contract_info = {"tijdsregistratie": "True",
-                 "minimale_beschikbaarheid": "xx",
-                 "minimale_responsetijd": "04:00:00"}
+
+def clean_inputdata(inputdata: DataFrame, index_first_col_maanden: int, category_column_name: str, time_bin: str = 'month') -> dict:
+    """
+    Gestandaardiseerde aanpak voor het schoonmaken van de input dataframes uit het rekendocument (excel) van
+    Remko van Gorkum.
+    :param inputdata:
+    :param index_first_col_maanden:
+    :param category_column_name:
+    :return:
+    """
+    _inputdata = inputdata.iloc[:-3, :]  # onderste 3 rijen zijn overbodig  EDIT (??is dit altijd zo??)
+    dictionary = {}
+    for col in _inputdata.iloc[:, index_first_col_maanden:]:
+        if _inputdata[col][0].lower() == 'totaal':
+            break
+
+        datetime_obj = clean_dt_string_month(_inputdata[col][0]) if time_bin == 'month' else clean_dt_string_q(_inputdata[col][0])
+        # initialize empty dict for month
+        if datetime_obj not in dictionary:
+            dictionary[datetime_obj] = {}  # Creates an empty dict w/ month as key in the dict
+
+        for index, row in _inputdata.iterrows():
+            if row[col] is np.nan:
+                break
+            elif index > 0 and int(row[col]) > 0:
+                dictionary[datetime_obj][row[category_column_name]] = row[col]
+
+    # dictionary = del_empty_keys(dictionary)
+
+    return dictionary
+
 
 # Full path to input file
+project = 'Coentunnel-tracé'
 file_input = 'metadata//20210505 Storingsdatabase Q1 2021.xlsx'
 excel_file = pd.ExcelFile(file_input)
 
-# inputdata_meldingen = pd.read_excel(excel_file, excel_file.sheet_names[0])
-# inputdata_storingen = pd.read_excel(excel_file, excel_file.sheet_names[1])
 inputdata_subsystems = pd.read_excel(excel_file, list(filter(lambda x: x.lower() == 'onterechte meldingen totaal', excel_file.sheet_names))[0])
+inputdata_poo_codes = pd.read_excel(excel_file, list(filter(lambda x: x.lower() == 'probleem oorzaak oplossing', excel_file.sheet_names))[0])
 
 inputdata_meldingen = pd.read_excel(excel_file, list(filter(lambda x: x.lower() == 'trend maand meldingen', excel_file.sheet_names))[0])
 inputdata_storingen = pd.read_excel(excel_file, list(filter(lambda x: x.lower() == 'trend maand storingen', excel_file.sheet_names))[0])
+
+inputdata_poo_probleem = pd.read_excel(excel_file, list(filter(lambda x: x.lower() == 'overzicht probleem', excel_file.sheet_names))[0])
+inputdata_poo_oorzaak = pd.read_excel(excel_file, list(filter(lambda x: x.lower() == 'overzicht oorzaak', excel_file.sheet_names))[0])
+inputdata_poo_oplossing = pd.read_excel(excel_file, list(filter(lambda x: x.lower() == 'overzicht oplossing', excel_file.sheet_names))[0])
 
 """
 Possible subsystem numbers
@@ -104,75 +138,88 @@ Possible subsystem numbers
 possible_subsystems = set()
 
 # Sluis Eefde gebruikt 'SBS subsysteem code'  -  ipv 'SBS sub-systeem code'
-col = 'SBS subsysteem code' if project == 'Sluis Eefde' else 'SBS sub-systeem code'
-for x in inputdata_subsystems[col][inputdata_subsystems[col].notnull()]:
+column = 'SBS subsysteem code' if project == 'Sluis Eefde' else 'SBS sub-systeem code'
+for x in inputdata_subsystems[column][inputdata_subsystems[column].notnull()]:
     possible_subsystems.add(str(x))
-
-contract_info['aanwezige_deelinstallaties'] = tuple(possible_subsystems)
 
 """
 meldingen per di_num
 di_num = SBS sub-systeem code
 """
-# Todo: aanpassen zodat meldingen zonder di_num ook worden meegenomen.
-meldingen_data = inputdata_meldingen.iloc[:-3, :]  # onderste 3 rijen zijn overbodig
-
-# Lege dict voor alle meldingen per maand. maand in meldingen wordt dict (maand) in dict (meldingen).
-# maanden worden toegevoegd in notatie [maand]-[jaar]
-meldingen = {}
-
-for col in meldingen_data.iloc[:, 4:]:  # mask on df gives only the columns w/ month
-
-    if meldingen_data[col][0] == "Totaal":  # last column after the months in the df
-        break
-    else:
-        dt_obj = clean_dt_string(meldingen_data[col][0])
-        # initialize empty dict for month
-        if dt_obj not in meldingen:
-            meldingen[dt_obj] = {}  # Creates an empty dict w/ month as key in the meldingen dict
-
-        for index, row in meldingen_data.iterrows():
-            if row[col] is np.nan:  # If nan is seen => caught up to current date
-                break
-            elif index > 0 and int(row[col]) > 0:
-                meldingen[dt_obj][row['SBS sub-systeem code']] = row[col]
+meldingen = clean_inputdata(inputdata_meldingen,
+                            index_first_col_maanden=4,
+                            category_column_name='SBS sub-systeem code',
+                            time_bin='month')
 
 """
 storingen per di_num
 di_num = SBS sub-systeem code
 """
-storingen_data = inputdata_storingen.iloc[:-3, :]  # onderste 3 rijen zijn overbodig  EDIT (??is dit altijd zo??)
+storingen = clean_inputdata(inputdata_storingen,
+                            index_first_col_maanden=4,
+                            category_column_name='SBS sub-systeem code',
+                            time_bin='month')
+"""
+POO-codes (Probleem/Oorzaak/Oplossing codes)
+"""
+poo_probleem = clean_inputdata(inputdata_poo_probleem,
+                               index_first_col_maanden=2,
+                               category_column_name='Probleem code',
+                               time_bin='q')
 
-# Lege dict voor alle storingen per maand. maand in storingen wordt dict (maand) in dict (storingen).
-# maanden worden toegevoegd in notatie [maand]-[jaar]
-storingen = {}
+poo_oorzaak = clean_inputdata(inputdata_poo_oorzaak,
+                              index_first_col_maanden=2,
+                              category_column_name='Oorzaak code',
+                              time_bin='q')
 
-for col in storingen_data.iloc[:, 4:]:  # mask on df gives only the columns w/ month
+poo_oplossing = clean_inputdata(inputdata_poo_oplossing,
+                                index_first_col_maanden=2,
+                                category_column_name='Oplossing code',
+                                time_bin='q')
 
-    if storingen_data[col][0] == "Totaal":  # last column after the months in the df
-        break
-    else:
-        dt_obj = clean_dt_string(storingen_data[col][0])
-        # initialize empty dict for month
-        if dt_obj not in storingen:
-            storingen[dt_obj] = {}  # Creates an empty dict w/ month as key in the storingen dict
+poo_codes = {"probleem": poo_probleem,
+             "oorzaak": poo_oorzaak,
+             "oplossing": poo_oplossing}
 
-        for index, row in storingen_data.iterrows():
-            if row[col] is np.nan:  # If nan is seen => caught up to current date
-                break
-            elif index > 0 and int(row[col]) > 0:
-                storingen[dt_obj][row['SBS sub-systeem code']] = row[col]
+poo_code_overzicht = dict()
+col_names = ['Probleem', 'Oorzaak', 'Oplossing']
+for name in col_names:
+    i = inputdata_poo_codes.columns.get_loc(name)
+    col_data = inputdata_poo_codes.iloc[:, i].to_dict()
+    beschrijving_data = inputdata_poo_codes.iloc[:, i+1].to_dict()
 
-meldingen = del_empty_keys(meldingen)
-storingen = del_empty_keys(storingen)
+    dict2add = {}
+    for idx in range(len(col_data)):
+        if col_data[idx] is np.nan:
+            break
+
+        if list(col_data.keys())[idx] not in poo_code_overzicht:
+            dict2add[col_data[idx]] = beschrijving_data[idx]
+
+    poo_code_overzicht = {**poo_code_overzicht, **dict2add}
+
+"""
+Tijdregistratie
+"""
+tijdsregistratie = "False"
+
+"""
+Set-up vna het JSON-Object
+"""
+contract_info = {"tijdsregistratie": tijdsregistratie,
+                 "minimale_beschikbaarheid": "xx",
+                 "minimale_responsetijd": "04:00:00",
+                 "aanwezige_deelinstallaties": tuple(possible_subsystems),
+                 "POO_codes": poo_code_overzicht}
 
 start_datum = get_first_key(meldingen)
 
 json_dict = {"project": project,
              "start_datum": start_datum,
              "contract_info": contract_info,
+             "poo_codes": poo_codes,
              "meldingen": meldingen,
              "storingen": storingen}
 
-with open(f"metadata//metadata_file_{project.lower().replace(' ', '_')}.json", 'w') as output_file:
-    json.dump(json_dict, output_file)
+# with open(f"metadata//metadata_file_{project.lower().replace(' ', '_')}.json", 'w') as output_file:
+#     json.dump(json_dict, output_file)

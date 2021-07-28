@@ -20,6 +20,56 @@ from matplotlib.figure import Figure
 from typing import Tuple, Optional, Union, List
 
 
+class Node:
+    def __init__(self, data):
+        self.data = data
+        self.next = None
+        self.prev = None
+
+
+class LinkedList:
+    def __init__(self):
+        self.head = None
+
+    def __getitem__(self, index):
+        i = 0
+        temp = self.head
+
+        if temp.data is None:
+            raise Exception("Linked List is empty")
+
+        if isinstance(index, int):
+            while temp is not None:
+                if i == index:
+                    return temp
+                temp = temp.next
+                i += 1
+        elif isinstance(index, str):
+            while temp is not None:
+                if temp.data == index:
+                    return temp
+                temp = temp.next
+
+    def traverse(self, starting_point=None):
+        if starting_point is None:
+            starting_point = self.head
+        node = starting_point
+        while node is not None and (node.next != starting_point):
+            yield node
+            node = node.next
+        yield node
+
+    def print_list(self, starting_point=None):
+        nodes = []
+        for node in self.traverse(starting_point):
+            nodes.append(str(node.data))
+        print(" -> ".join(nodes))
+
+    def get_prev_val(self, value):
+        n = self.__getitem__(value)
+        return n.prev.data
+
+
 class PrepNPlot:
 
     # Class variables (callable by using class_name.var_name)
@@ -32,12 +82,31 @@ class PrepNPlot:
         self.graphs = []
         self.last_seen_bin_names = []
 
+        self.quarter_sequence = self.__build_quarter_llist()
+
     """
     Managing modules -- Modules that influence the attributes of PrepNPlot.
     """
     # todo: aanpassen naar de beste data strucuut om verschillende figuren vast te leggen
     def add_graph_for_export(self, figure: Figure) -> None:
         self.graphs.append(figure)
+
+    def __build_quarter_llist(self):
+        llist = LinkedList()
+        for i in range(len(self._quarters.keys())):
+            key = list(self._quarters.keys()).__getitem__(i)
+            n = Node(key)
+            if i == 0:
+                llist.head = n
+                n.prev = llist.head
+            else:
+                prev_n = llist.__getitem__(i-1)
+                prev_n.next = n
+                n.prev = prev_n
+                if i == (len(list(self._quarters.keys())) - 1):
+                    n.next = llist.head
+                    llist.head.prev = n
+                    return llist
 
     """
     Preperation modules -- Modules that focus on the preperation and transformation of the input data.
@@ -588,3 +657,8 @@ if __name__ == '__main__':
     month_set = [pp._quarters[key] for key in pp._quarters.keys() if pp._check_a_in_b(a=str(z[0].month), b=pp._quarters[key])][0]
     print(month_set)
 
+    pp.quarter_sequence.print_list()
+    x = pp.quarter_sequence['Q4']
+    print(f"x data = {x.data}")
+    print(f"x prev = {x.prev.data}")
+    print(f"x next = {x.next.data}")
