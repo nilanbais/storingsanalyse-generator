@@ -24,6 +24,7 @@ from metadata_storingsanalyse import MetadataStoringsAnalyse
 from query_maximo_database import QueryMaximoDatabase
 from prepnplot import PrepNPlot
 
+from typing import Dict
 
 # Todo: documentatie schrijven voor class
 # Todo: Kijken hoe het type rapport (kwartaal of jaar) ingebouwd moet worden (wss als extra parameter bij aanmaken \
@@ -110,20 +111,6 @@ class StoringsAnalyse(PrepNPlot):
     @staticmethod
     def _isolate_di_number(asset_num_string):
         return asset_num_string.split('-')[0]
-
-    @staticmethod
-    def _order_frequency_table(freq_table):
-        return {key: value for key, value in sorted(freq_table.items(), key=lambda item: item[1], reverse=True)}
-
-    def make_frequency_table(self, di_series):
-        freq_table = {}
-        for index, value in di_series.iteritems():
-            di_num = self._isolate_di_number(index)
-            if di_num in freq_table:
-                freq_table[di_num] += value
-            else:
-                freq_table[di_num] = value
-        return self._order_frequency_table(freq_table)
 
     def _get_ntype(self, like_ntype):
         if like_ntype is None:

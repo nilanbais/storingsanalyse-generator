@@ -42,7 +42,7 @@ import json
 import pandas as pd
 import numpy as np
 
-from typing import Union, List
+from typing import Union, List, Dict
 # Todo: ONDERSTAANDE AANPASSING STERK OVERWEGEN
 """
 Aanpassing:
@@ -375,6 +375,25 @@ class MetadataStoringsAnalyse:
                 list_to_return.append(num)
 
         return list_to_return
+
+    @staticmethod
+    def _order_frequency_table(freq_table: dict) -> dict:
+        return {key: value for key, value in sorted(freq_table.items(), key=lambda item: item[1], reverse=True)}
+
+    def make_ddict_frequency_table(self, dictionary: Dict[str, dict]) -> dict:
+        freq_table = {}
+        for ddict in dictionary.values():
+            for key, value in ddict.items():
+                if key in freq_table:
+                    freq_table[key] += value
+                else:
+                    freq_table[key] = value
+        return self._order_frequency_table(freq_table)
+
+    def poo_avg_table(self, poo_dictionary: dict) -> dict:
+        sum_per_code = self.make_ddict_frequency_table(dictionary=poo_dictionary)
+        avg_table = {key: sum_per_code[key] / len(poo_dictionary) for key in sum_per_code.keys()}
+        return self._order_frequency_table(avg_table)
 
 
 if __name__ == '__main__':
