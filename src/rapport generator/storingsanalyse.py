@@ -19,12 +19,18 @@ import os.path
 
 import pandas as pd
 
+from matplotlib.backends.backend_pdf import PdfPages
+
 from stagingfile_class import StagingFileBuilder
 from metadata_storingsanalyse import MetadataStoringsAnalyse
 from query_maximo_database import QueryMaximoDatabase
 from prepnplot import PrepNPlot
 
-from typing import Dict
+from pandas import DataFrame
+from matplotlib.figure import Figure
+from typing import Tuple, Optional, Union, List
+from datetime import datetime
+
 
 # Todo: documentatie schrijven voor class
 # Todo: Kijken hoe het type rapport (kwartaal of jaar) ingebouwd moet worden (wss als extra parameter bij aanmaken \
@@ -34,12 +40,12 @@ class StoringsAnalyse(PrepNPlot):
     # Class variables (callable by using class_name.var_name)
     _ld_map_path = "..\\..\\res\\location_description_map.json"  # location_description_map
 
-    def __init__(self, project, api_key, object_structure) -> None:
+    def __init__(self, project: str, api_key: str) -> None:
         PrepNPlot.__init__(self)
 
         self.metadata = MetadataStoringsAnalyse(project)
 
-        self._maximo = QueryMaximoDatabase(api_key, object_structure)
+        self._maximo = QueryMaximoDatabase(api_key)
         self.response_data = self._maximo.response_data  # is set by get_maximo_export, default = None
         self.filename_saved_response_data = None
 
@@ -55,8 +61,13 @@ class StoringsAnalyse(PrepNPlot):
         self.project = self.metadata.project()
         self.start_date = self.metadata.startdate()
 
+        self.graphs = []
+
+    """
+    Managing modules -- Modules that fulfill some specific general task
+    """
     @staticmethod
-    def _read_ld_map():
+    def _read_ld_map() -> DataFrame:
         """
         Module to load the data for the descriptions of the location breakdown structure numbers (LBS) and the system
         breakdown structure numbers (SBS).
@@ -66,74 +77,79 @@ class StoringsAnalyse(PrepNPlot):
             description_data = json.load(file)
         return pd.DataFrame(description_data)
 
-    def build_staging_file(self, maximo_export_data_filename):
-        sfb = StagingFileBuilder(maximo_export_data_filename=maximo_export_data_filename)
-        sfb.build_staging_file()
-        self.staging_file_name = sfb.export_file_name
-
-    def read_staging_file(self, filename):
-        self.staging_file_path = "..\\staging file\\" + filename
-        self.staging_file_data = pd.read_excel(self.staging_file_path)
-
-    def split_staging_file(self):
-        self.meldingen = self.staging_file_data
-        self.storingen = self._isolate_notification_type(like_ntype='storingen')
-        return "Data available through the use of StoringsAnalyse.meldingen and StoringsAnalyse.storingen"
-
-    def _get_breakdown_description(self, sbs_lbs):
+    def _get_breakdown_description(self, sbs_lbs: str) -> str:
         description = [self._ld_map.loc[str(index), 'description']
                        for index in range(self._ld_map.shape[0])
                        if sbs_lbs == self._ld_map.loc[str(index), 'location']]
-        return description if len(description) > 0 else [""]  # To cover empty rows
+        return description[0] if len(description) > 0 else [""]  # To cover empty rows
 
-    def get_maximo_export(self, query=None):  # todo: naam veranderen naar query_maximo_database (ook in documentatie)
-        if query is None and self._maximo.query is None:
-            raise ValueError("You're trying to make a request without a query. Set a query before making a request.")
+    @staticmethod
+    def _isolate_di_number(asset_num_string: str) -> str:
+        return asset_num_string.split('-')[0]
 
-        self._maximo.get_response_data(query)  # sets self.response_data
-        return "Done."
-    
-    def save_maximo_export(self):  # todo: naam veranderen naar save_maximo_response_data (ook in documentatie)
+    """
+    Database modules -- Modules that focus on the interaction with the database (all _maximo related moludes).
+    """
+    def query_maximo_database(self, site_id: str, report_time: List[datetime], work_type: str = "COR") -> str:  # todo: naam veranderen naar query_maximo_database (ook in documentatie)
+        query = self.build_query(site_id, report_time, work_type)
+        self._maximo.get_response_data(query=query)  # sets self.response_data
+        return "Query finished successfully."
+
+    def save_maximo_data(self) -> None:  # todo: naam veranderen naar save_maximo_response_data (ook in documentatie)
         self.filename_saved_response_data = self._maximo._default_file_name  # access to protected member
         # recursive function that keeps calling itself until an error occurs or the file is saved
         self._maximo.save_response_data(filename=self.filename_saved_response_data)
 
     @staticmethod
-    def _month_num_to_name(month_num: int or list) -> str:
-        maand_dict = {"1": "Januari", "2": "Februari", "3": "Maart", "4": "April", "5": "Mei", "6": "Juni", "7": "Juli",
-                      "8": "Augustus", "9": "September", "10": "Oktober", "11": "November", "12": "December", }
-        if isinstance(month_num, list):
-            maand = [maand_dict[str(num)] for num in month_num for key in maand_dict.keys() if str(num) == key]
-            return maand[0]
-        elif isinstance(month_num, int):
-            return maand_dict[str(month_num)]
+    def build_query(site_id: str, report_time: List[datetime], work_type: str = "COR") -> str:
+        """
+        Returns the query string
+        :param site_id:
+        :param report_time:
+        :param work_type:
+        :return:
+        """
+        start_date, end_date = [datetime.strftime(dt, '%Y-%m-%d') for dt in report_time]
+        query = f'sited="{site_id}" and worktype="{work_type}" and reportdate >= "{start_date}" and reportdate <= "{end_date}"'
+        return query
 
-    @staticmethod
-    def _isolate_di_number(asset_num_string):
-        return asset_num_string.split('-')[0]
+    """
+    StagingFile modules -- Modules that focus on the actions in relation to the Staging File.
+    """
+    def build_staging_file(self, maximo_export_data_filename: str) -> None:
+        sfb = StagingFileBuilder(maximo_export_data_filename=maximo_export_data_filename)
+        sfb.build_staging_file()
+        self.staging_file_name = sfb.export_file_name
 
-    def _get_ntype(self, like_ntype):
+    def read_staging_file(self, filename: str) -> None:
+        self.staging_file_path = "..\\staging file\\" + filename
+        self.staging_file_data = pd.read_excel(self.staging_file_path)
+
+    def split_staging_file(self) -> str:
+        self.meldingen = self.staging_file_data
+        self.storingen = self._isolate_notification_type(like_ntype='storingen')
+        return "Data available through the use of StoringsAnalyse.meldingen and StoringsAnalyse.storingen"
+
+    def _get_ntype(self, like_ntype: str) -> str:
         if like_ntype is None:
             return self.staging_file_data
         elif like_ntype.lower() in {'m', 'melding', 'meldingen'}:
-            ntype = "Melding"
+            return "Melding"
         elif like_ntype.lower() in {'s', 'storing', 'storingen'}:
-            ntype = "Storing"
+            return "Storing"
         elif like_ntype.lower() in {'i', 'incident', 'incidenten'}:
-            ntype = "Incident"
+            return "Incident"
         elif like_ntype.lower() in {'p', 'preventief'}:
-            ntype = "Preventief"
+            return "Preventief"
         elif like_ntype.lower() in {'o', 'onterecht'}:
-            ntype = "Onterecht"
+            return "Onterecht"
         elif like_ntype.lower() in {"meldingen", "storing", "incident", "preventief", "onterecht"}:
-            pass
+            return like_ntype
         else:
             raise ValueError("Please select either \"Melding\", \"Storing\", \"Incident\", \"Preventief\", "
                              "\"Onterecht\" as like_ntype.")
 
-        return ntype
-
-    def _isolate_notification_type(self, like_ntype='storing'):
+    def _isolate_notification_type(self, like_ntype: str = 'storing') -> DataFrame:
         """
         returns df with only the specified notification type (ntype)
         :param like_ntype: a term which looks like a known ntype.
@@ -143,33 +159,26 @@ class StoringsAnalyse(PrepNPlot):
         ntype = self._get_ntype(like_ntype=like_ntype)
         return self.staging_file_data[self.staging_file_data['type melding (Storing/Incident/Preventief/Onterecht)'] == ntype]
 
-    def totaal_aantal_x_export(self, x='meldingen'):
-        if x == 'storingen':
-            return len(self.storingen)
-        return len(self.meldingen)
+    """
+    Metadata modules -- Modules that focus on handling (preperation and transformation) of the input data.
+    """
 
-    def x_per_maand(self, x='meldingen'):
-        if x == 'storingen':
-            return self.storingen['month_number'].value_counts()
-        return self.meldingen['month_number'].value_counts()
+    """
+    Prep and Plot modules -- Modules that focus on the preperation, transformation and plotting.
+    """
+    def _add_graph_for_export(self, figure: Figure) -> None:
+        self.graphs.append(figure)
 
-    # def storingen_per_maand(self):
-    #     return self.x_per_maand(x='storingen')
+    def plot(self, input_data: List[list], plot_type: str, category_labels: list, bin_labels: list) -> None:
+        fig = PrepNPlot.plot(self, input_data, plot_type, category_labels, bin_labels)
+        self._add_graph_for_export(fig)
 
-    def avg_x_per_maand(self, x='meldingen'):
-        return sum(self.x_per_maand(x=x)) / len(self.x_per_maand(x=x))
+    def plot_summary(self, x_labels: list, data: list) -> None:
+        fig = PrepNPlot.plot_summary(x_labels, data)  # plot_summary is static in PrepNPlot so no 'self' here
+        self._add_graph_for_export(fig)
 
-    def maand_max_min_x(self, min_max='max', x='meldingen'):
-        if min_max == 'min':
-            num_maand_meeste_meldingen = [self.x_per_maand(x=x).index[self.x_per_maand(x=x) == min(self.x_per_maand(x=x))][0]]
-        else:
-            num_maand_meeste_meldingen = [self.x_per_maand(x=x).index[self.x_per_maand(x=x) == max(self.x_per_maand(x=x))][0]]
-        maand = self._month_num_to_name(month_num=num_maand_meeste_meldingen)
-        return maand[0] if len(maand) == 1 else maand
-
-    # todo: meldingen_2019 in jn vertalen naar module
-    def x_voorgaande_jaar(self):
-        pass
-
-    def plot_ntype_per_maand(self, ntype='meldingen'):
-        pass
+    def export_graphs(self, filename: str) -> None:
+        pdfp = PdfPages(filename)
+        for graph in self.graphs:
+            pdfp.savefig(graph)
+        pdfp.close()

@@ -10,7 +10,6 @@ inzicht te krijgen (bijv. storingen van twee di nummers enkel in de maanden apri
 
 """
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 
 from datetime import datetime
@@ -78,20 +77,33 @@ class PrepNPlot:
                  'Q3': {'07', '08', '09'},
                  'Q4': {'10', '11', '12'}}
 
+    # todo: aanpassen in documentatie
+    _maand_dict = {"1": "Januari",
+                   "2": "Februari",
+                   "3": "Maart",
+                   "4": "April",
+                   "5": "Mei",
+                   "6": "Juni",
+                   "7": "Juli",
+                   "8": "Augustus",
+                   "9": "September",
+                   "10": "Oktober",
+                   "11": "November",
+                   "12": "December"}
+
+    # todo: aanpassen in documentatie
+    _separator_set = {'_', '/', '\\', '.', '-'}
+
     def __init__(self):
-        self.graphs = []
         self.last_seen_bin_names = []
 
-        self.quarter_sequence = self.__build_quarter_llist()
+        self.quarter_sequence = self.__build_quarter_linkedlist()
 
     """
     Managing modules -- Modules that influence the attributes of PrepNPlot.
     """
     # todo: aanpassen naar de beste data strucuut om verschillende figuren vast te leggen
-    def add_graph_for_export(self, figure: Figure) -> None:
-        self.graphs.append(figure)
-
-    def __build_quarter_llist(self):
+    def __build_quarter_linkedlist(self):
         llist = LinkedList()
         for i in range(len(self._quarters.keys())):
             key = list(self._quarters.keys()).__getitem__(i)
@@ -130,6 +142,12 @@ class PrepNPlot:
         else:
             raise ValueError(f"Unknown input format of the datetime string. Input string: {string}")
 
+    def replace_separator(self, string: str, inserting_separator: str = '-') -> str:
+        if any(s in string for s in self._separator_set):
+            for separator in self._separator_set:
+                string = string.replace(separator, inserting_separator)
+        return string
+
     def _prep_time_range(self, time_range: [str, str]):
         """
         Returns list of datetime objects when given strings.
@@ -137,14 +155,11 @@ class PrepNPlot:
         :return:
         """
         # todo: als het problemen kan oplossen, dan moet hier nog worden toegevoegd dat er een check komt op
-        #  welke index de seperator staat.
-        seperator_set = {'_', '/', '\\', '.'}
+        #  welke index de separator staat.
         new_time_range = []
         for tr in time_range:
 
-            if any(s in tr for s in seperator_set):
-                for seperator in seperator_set:
-                    tr = tr.replace(seperator, '-')
+            tr = self.replace_separator(string=tr)
 
             if len(tr) == 6 and tr.index('-', 0, 4) == 1:
                 tr = '0' + tr  # changing 3-2020 to 03-2020
@@ -224,6 +239,28 @@ class PrepNPlot:
             month_set = set.union(month_set, self._quarters[list(self._quarters.keys())[index]])
         return month_set
 
+    # todo: aanpassen in documentatie
+    def _month_num_to_name(self, month_num: int or list) -> str:
+        if isinstance(month_num, list):
+            maand = [self._maand_dict[str(num)] for num in month_num for key in self._maand_dict.keys() if str(num) == key]
+            return maand[0]
+        elif isinstance(month_num, int):
+            return self._maand_dict[str(month_num)]
+
+    # todo: aanpassen in documentatie
+    def prettify_time_label(self, label: str) -> str:
+        """
+        Return a prettified string in which the separator is removed and the month number is substituted for the
+        written out month name ('03_2018' -> 'Maart 2018' and 'Q4_2020' -> 'Q4 2020')
+        :param label:
+        :return:
+        """
+        label = self.replace_separator(string=label, inserting_separator='_')  # makes sure '_' is the separator
+        bin, year = label.split('_')
+        if 'Q' in bin.title():
+            return bin.title() + ' ' + year
+        return self._month_num_to_name(month_num=int(bin)) + ' ' + year
+
     @staticmethod
     def _check_a_in_b(a: str, b: set) -> bool:
         return True if a in b else False
@@ -238,7 +275,8 @@ class PrepNPlot:
         month_str = str(time_to_check.month) if time_to_check.month > 9 else '0' + str(time_to_check.month)
         return self._check_a_in_b(a=month_str, b=month_set)
 
-    def _transform_to_meta_structure(self, input_object: DataFrame, time_key: str, categorical_key: str) -> dict:
+    @staticmethod
+    def _transform_to_meta_structure(input_object: DataFrame, time_key: str, categorical_key: str) -> dict:
         """
         Transforms a DataFrame to the structure of the metadata (like bellow).
             {month}_{year}": {
@@ -559,7 +597,7 @@ class PrepNPlot:
     """
     Plot modules -- Modules that focus on setting up the parameters for plotting and plotting of the figure.
     """
-    def plot(self, input_data: List[list], plot_type: str, category_labels: list, bin_labels: list) -> None:
+    def plot(self, input_data: List[list], plot_type: str, category_labels: list, bin_labels: list) -> Figure:
         """
         Takes the result of prep and plots it.
         :param input_data:
@@ -616,16 +654,19 @@ class PrepNPlot:
         # fig.autofmt_xdate(rotation=45)
 
         plt.show()
+        return fig
 
+    # todo: aanpassen in documentatie
     @staticmethod
-    def plot_summary(input_data: dict) -> None:
+    def plot_summary(x_labels: list, data: list) -> Figure:
         """
         Takes the result of prep_summary and plots it.
-        :param input_data:
+        :param x_labels:
+        :param data:
         :return:
         """
         fig, axis = plt.subplots()
-        axis.bar(input_data.keys(), input_data.values(), width=0.3)
+        axis.bar(x_labels, data, width=0.3)
         axis.set_ylabel('Aantal')
         axis.set_title("Aantal meldingen per maand")  # todo: veranderen naar meldingen per {bin_size}
         axis.margins(x=.2, y=.2)
@@ -634,6 +675,7 @@ class PrepNPlot:
         axis.grid(axis='y', linestyle='--')
 
         plt.show()
+        return fig
 
 
 if __name__ == '__main__':
@@ -652,6 +694,8 @@ if __name__ == '__main__':
     x = '10-2017'
     y = '01-2020'
     z = pp._prep_time_range([x, y])
+
+    print(pp.prettify_time_label(x))
 
     print(z[0].month)
     month_set = [pp._quarters[key] for key in pp._quarters.keys() if pp._check_a_in_b(a=str(z[0].month), b=pp._quarters[key])][0]

@@ -6,6 +6,7 @@ import os
 import requests
 import json
 from datetime import datetime
+from typing import Union
 
 
 # Todo: documentatie voor class aanpassen zodat duidelijk wordt wat return is of wat beïnvloed wordt
@@ -15,10 +16,12 @@ class QueryMaximoDatabase:
     # class variable
     _default_file_name = f"{str(datetime.now().date()).replace('-', '')}_{str(datetime.now().time().hour)}_{str(datetime.now().time().minute)}_query_response_data.json"
 
-    def __init__(self, api_key, object_structure):
+    def __init__(self, api_key: str) -> None:
         self.api_key = api_key
-        self.object_structure = object_structure
-        self.query = None
+        self.object_structure = None  # set by _set_object_structure
+        self._set_object_structure()  # sets default value of object structure
+
+        self.site_id = None
 
         self.response = None
         self._dump_list = None  # when not None it's a list of lists
@@ -28,14 +31,18 @@ class QueryMaximoDatabase:
                                '_dropnulls': 0,  # don't pass null values
                                'Accept': 'application/json'}  # set JSON as default output
 
-        # Set up the params dictionary according to documentation
-        self.parameters = {**self.url_parameters,  # asterisks (**) unpacks each key:value-pair of the dict
-                           'oslc.where': self.query}
+        self.parameters = None
 
         # Set up header dictionary w/ API key according to documentation
         self.headers = {'maxauth': self.api_key}
 
-    def get_response(self, query=None):
+    def _set_site_id(self, site_id: str) -> None:
+        self.site_id = site_id
+
+    def _set_object_structure(self, object_structure: str = 'MXWO_SND') -> None:
+        self.object_structure = object_structure
+
+    def _get_response(self, query: Union[str, None] = None) -> str:
         """
         Function to launch the GET request to the Maximo application.
         :param query: The query variable defined in '2. Declare the required
@@ -53,6 +60,7 @@ class QueryMaximoDatabase:
         api_url = 'https://maximotest.tbi.nl/maximo/oslc/os/' + self.object_structure + '?'
 
         print('making request')
+
         # Call the API
         response = requests.get(api_url, headers=self.headers, params=self.parameters)
 
@@ -64,10 +72,7 @@ class QueryMaximoDatabase:
         self.response = response
         return "Done."
 
-    def _get_dump_list(self):
-        if self.response is None:
-            self.get_response()
-
+    def _get_dump_list(self) -> None:
         json_data = self.response.json()
         _links = [x.values() for x in json_data['member']]
         dump_list = []
@@ -78,37 +83,24 @@ class QueryMaximoDatabase:
 
         self._dump_list = dump_list
 
-    def get_response_data(self, query=None):
+    def get_response_data(self, query: Union[str, None] = None) -> None:
         try:
-            if self.query is None and query is not None:
-                self.query = query
-
+            self.parameters = {**self.url_parameters,  # asterisks (**) unpacks each key:value-pair of the dict
+                               'oslc.where': query}
+            self._get_response(query=query)
             self._get_dump_list()
             self.response_data = json.dumps(self._dump_list)
         except ValueError as e:
             print(f"The following error is given: {e}")
-            print('\n')
-            print(f"Can't get response data, because no response is present. To get a response, make sure you use a correct query.")
 
-    def save_response_data(self, filename=_default_file_name, query=None):
-        if self.response is None:
-            print("No result from resonse yet..")
-            print("Making request ")
-            self.get_response(query)
-            self.save_response_data(query)
+    def save_response_data(self, filename: str = _default_file_name) -> None:
+        with open(filename, 'w') as output_file:
+            json.dump(self._dump_list, output_file, indent=6)
 
-        if self.response_data is None:
-            self.get_response_data(query)
-            self.save_response_data(query)
-
-        if self.response_data is not None and self.response is not None:
-            with open(filename, 'w') as output_file:
-                json.dump(self._dump_list, output_file, indent=6)
-
-            print(f"JSON object saved as {filename} at {os.getcwd()}")
+        print(f"JSON object saved as {filename} at {os.getcwd()}")
 
 
 if __name__ == "__main__":
-    qmdb = QueryMaximoDatabase("bWF4YWRtaW46R21iQ1dlbkQyMDE5", "MXWO_SND")
+    qmdb = QueryMaximoDatabase("bWF4YWRtaW46R21iQ1dlbkQyMDE5")
     query = 'siteid="CT1EN2" and worktype="COR" and reportdate>="2018-01-01T00:00:00-00:00" and reportdate<="2018-03-30T00:00:00-00:00"'
-    qmdb.get_response(query=query)
+    qmdb._get_response(query=query)

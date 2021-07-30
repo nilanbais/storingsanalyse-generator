@@ -207,12 +207,12 @@ class StagingFileBuilder:
         new_dictionary = {clean_key(key): dictionary[key] for key in dictionary.keys()}
         return new_dictionary
 
-    def read_sf_data(self):
+    def read_sf_data(self) -> json:
         with open(f"..\\staging file\\{self.input_file_name}", 'r') as input_file:
             data = json.load(input_file)
         return data
 
-    def build_base_df(self):
+    def build_base_df(self) -> str:
         """
         Module for building the base dataframe of the staging file. the base dataframe isn't anything more than
         the maximo export data without any nested json
@@ -285,7 +285,7 @@ class StagingFileBuilder:
 
         return "Done."
 
-    def prep_staging_file_df(self):
+    def prep_staging_file_df(self) -> str:
         """
         Module for preping the base dataframe to a dataframe that can be exported as staging file.
         It contains getting the descriptions of the sbs/lbs numbers, cleaning some data, and preping column names to
@@ -372,7 +372,7 @@ class StagingFileBuilder:
 
         return "Done."
 
-    def save_staging_file(self):
+    def save_staging_file(self) -> str:
         """
         Module for saving the staging file. It also adds the dropdown for the list for inserting the different types
         of notifications.
@@ -440,7 +440,7 @@ class StagingFileBuilder:
         workbook.close()
         return f"Staging file saved as {filename} in the folder 'staging file'."
 
-    def build_staging_file(self):
+    def build_staging_file(self) -> None:
         self.build_base_df()
         self.prep_staging_file_df()
         self.export_file_name = self._default_file_name  # freezing name because of the date and time in the name

@@ -43,15 +43,6 @@ import pandas as pd
 import numpy as np
 
 from typing import Union, List, Dict
-# Todo: ONDERSTAANDE AANPASSING STERK OVERWEGEN
-"""
-Aanpassing:
-Wanneer de bovenstaande objectstructuur voor meer dan alleen een storingsanalyse wordt toegepast, is het misschien
-beter om een splitsing te maken. een dergelijke splitsing zal dan gemaakt moeten worden tussen de metadata
-objectstructuur met de modules die een abstracte bewerking doen op de data (count_values & sum_values) en de bewerkingen
-die een type specifieke bewerking doen (alles met storingsanalyse specifieke handelingen).
-"""
-# Todo: class uitbreiden met de isolatie van de mogelijke di nummers die worden gebruikt in het project
 
 
 # todo: documentatie aanpassen
@@ -128,7 +119,7 @@ class MetadataStoringsAnalyse:
             else self.storingen() if str(notification_type.lower()) in ['s', 'storing', 'storingen'] \
             else False
 
-        if not dictionary:
+        if isinstance(dictionary, bool):
             raise ValueError(f"Incorrect input value given: {notification_type}. Please choose one of the following notification types: 'meldingen', 'storingen'.")
 
         di_set = {di}  # {di} makes a set of di. set(di) gave different result
@@ -318,7 +309,7 @@ class MetadataStoringsAnalyse:
             else self.storingen() if str(notification_type.lower()) in ['s', 'storing', 'storingen'] \
             else False
 
-        if not dictionary:
+        if isinstance(dictionary, bool):
             raise ValueError(f"Incorrect input value given: {notification_type}. Please choose one of the following notification types: 'meldingen', 'storingen'.")
 
         _set_months = set(exclude_month) if exclude_month is not None else set()
@@ -359,10 +350,11 @@ class MetadataStoringsAnalyse:
         result = {key: dictionary[key] for key in dictionary.keys() if key in keys_to_return}
         return result
 
+    # todo: aanpassen in documentatie
     def _quarter_to_month_numbers(self, quarters: Union[List[str], str]) -> list:
         """
         Returns the corresponding months of the given quarters
-        :param quarter:
+        :param quarters:
         :return:
         """
         if isinstance(quarters, str):
@@ -376,10 +368,12 @@ class MetadataStoringsAnalyse:
 
         return list_to_return
 
+    # todo: aanpassen in documentatie
     @staticmethod
     def _order_frequency_table(freq_table: dict) -> dict:
         return {key: value for key, value in sorted(freq_table.items(), key=lambda item: item[1], reverse=True)}
 
+    # todo: aanpassen in documentatie
     def make_ddict_frequency_table(self, dictionary: Dict[str, dict]) -> dict:
         freq_table = {}
         for ddict in dictionary.values():
@@ -390,6 +384,7 @@ class MetadataStoringsAnalyse:
                     freq_table[key] = value
         return self._order_frequency_table(freq_table)
 
+    # todo: aanpassen in documentatie
     def poo_avg_table(self, poo_dictionary: dict) -> dict:
         sum_per_code = self.make_ddict_frequency_table(dictionary=poo_dictionary)
         avg_table = {key: sum_per_code[key] / len(poo_dictionary) for key in sum_per_code.keys()}
