@@ -77,7 +77,6 @@ class PrepNPlot:
                  'Q3': {'07', '08', '09'},
                  'Q4': {'10', '11', '12'}}
 
-    # todo: aanpassen in documentatie
     _maand_dict = {"1": "Januari",
                    "2": "Februari",
                    "3": "Maart",
@@ -91,7 +90,6 @@ class PrepNPlot:
                    "11": "November",
                    "12": "December"}
 
-    # todo: aanpassen in documentatie
     _separator_set = {'_', '/', '\\', '.', '-'}
 
     def __init__(self):
@@ -102,7 +100,7 @@ class PrepNPlot:
     """
     Managing modules -- Modules that influence the attributes of PrepNPlot.
     """
-    # todo: aanpassen naar de beste data strucuut om verschillende figuren vast te leggen
+    # todo: aanpassen naar de beste data strucuur om verschillende figuren vast te leggen
     def __build_quarter_linkedlist(self):
         llist = LinkedList()
         for i in range(len(self._quarters.keys())):
@@ -171,7 +169,7 @@ class PrepNPlot:
 
     def _get_time_range_base(self, time_range: [datetime, datetime]) -> list:
         """
-
+        Returns a list with all the months between the start and end of the input time range
         :param time_range:
         :return:
         """
@@ -247,7 +245,6 @@ class PrepNPlot:
         elif isinstance(month_num, int):
             return self._maand_dict[str(month_num)]
 
-    # todo: aanpassen in documentatie
     def prettify_time_label(self, label: str) -> str:
         """
         Return a prettified string in which the separator is removed and the month number is substituted for the
@@ -287,8 +284,8 @@ class PrepNPlot:
             }
 
         :param input_object:
-        :param time_key:
-        :param categorical_key:
+        :param time_key: The key/column name in which the time is stored
+        :param categorical_key: The key/column name in which the categorical data is stored
         :return:
         """
         _input_object = input_object.reset_index()
@@ -381,8 +378,6 @@ class PrepNPlot:
             }
 
         :param input_object: a full dataset from which all the specific data is needed to be extracted.
-        :param time_key: The key/column name in which the time is stored
-        :param categorical_key: The key/column name in which the categorical data is stored
         :param bin_size: Bin size is a string 'quarter', 'year'
         :param time_range: A list like [start, end] where start and end need to be both datetime objects or strings representing dates.
         :return: Dict with structure that can be used 'as-is' in _prep_end_step()
@@ -402,7 +397,7 @@ class PrepNPlot:
         else:
             bins = None
 
-        # building output dict based on the bins dict
+        # building the output dict based on the bins dict
         output_dict = self.build_output_first_step(input_object, available_categories, bins)
 
         return output_dict
@@ -410,7 +405,7 @@ class PrepNPlot:
     @staticmethod
     def _prep_second_step(input_dict: dict) -> dict:
         """
-        This preperation action that changes the following to the data structure presented after the next, by adding
+        This preparation action that changes the first structure to the later data structure, by adding
         up the values of each third level key (key_1x1)
         (example: the values of key_111, key_121, key_131 would be added up and stored as key_11: value_11 in the
         result)
@@ -549,6 +544,7 @@ class PrepNPlot:
 
         return result_step_three
 
+    # todo: documenteren
     def test_prep(self, input_object: Union[DataFrame, dict], time_range: [datetime, datetime] or [str, str], available_categories: List[str], category_key: Optional[str] = None, time_key: Optional[str] = None, bin_size: Optional[str] = False) -> list:
         # todo: Het kan zijn dat de functie gebruikt wordt en dat er geen time_range gespecificeerd kan worden
         #  (of dat men dat niet wil) dus er moet nog iets komen voor deze situaties
@@ -656,7 +652,6 @@ class PrepNPlot:
         plt.show()
         return fig
 
-    # todo: aanpassen in documentatie
     @staticmethod
     def plot_summary(x_labels: list, data: list) -> Figure:
         """
