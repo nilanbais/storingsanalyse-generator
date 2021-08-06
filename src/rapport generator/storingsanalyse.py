@@ -78,6 +78,7 @@ class StoringsAnalyse(PrepNPlot):
         return pd.DataFrame(description_data)
 
     def _get_breakdown_description(self, sbs_lbs: str) -> str:
+        sbs_lbs = '00' if sbs_lbs == '0' else sbs_lbs  # patch for Coentunnel
         description = [self._ld_map.loc[str(index), 'description']
                        for index in range(self._ld_map.shape[0])
                        if sbs_lbs == self._ld_map.loc[str(index), 'location']]

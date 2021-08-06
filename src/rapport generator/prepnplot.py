@@ -243,6 +243,7 @@ class PrepNPlot:
             maand = [self._maand_dict[str(num)] for num in month_num for key in self._maand_dict.keys() if str(num) == key]
             return maand[0]
         elif isinstance(month_num, int):
+
             return self._maand_dict[str(month_num)]
 
     def prettify_time_label(self, label: str) -> str:

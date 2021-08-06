@@ -50,11 +50,8 @@ class QueryMaximoDatabase:
         :return: The respone of the Maximo application.
         """
         print('checking self.query and query (param)')
-        if self.query is None and query is None:
+        if query is None:
             raise ValueError("You're trying to make a request without a query. Set a query before making a request.")
-
-        if self.query is None and query is not None:
-            self.query = query
 
         print('build api-url')
         api_url = 'https://maximotest.tbi.nl/maximo/oslc/os/' + self.object_structure + '?'
@@ -102,5 +99,8 @@ class QueryMaximoDatabase:
 
 if __name__ == "__main__":
     qmdb = QueryMaximoDatabase("bWF4YWRtaW46R21iQ1dlbkQyMDE5")
-    query = 'siteid="CT1EN2" and worktype="COR" and reportdate>="2018-01-01T00:00:00-00:00" and reportdate<="2018-03-30T00:00:00-00:00"'
-    qmdb._get_response(query=query)
+    # query = 'siteid="CT1EN2" and worktype="COR" and reportdate>="2018-01-01T00:00:00-00:00" and reportdate<="2018-03-30T00:00:00-00:00"'
+    query = 'siteid="CT1EN2" and worktype="COR" and reportdate>="2021-04-01T00:00:00-00:00" and reportdate<="2021-06-30T00:00:00-00:00"'
+    # qmdb._get_response(query=query)
+    qmdb.get_response_data(query=query)
+    qmdb.save_response_data()
