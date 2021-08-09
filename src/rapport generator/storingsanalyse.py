@@ -88,6 +88,26 @@ class StoringsAnalyse(PrepNPlot):
     def _isolate_di_number(asset_num_string: str) -> str:
         return asset_num_string.split('-')[0]
 
+    # Todo: toevoegen aan documentatie
+    def get_min_max_months(self, notifications_groupby_months: dict, min_max: str) -> list:
+        """
+        Returns a list with the names of the month(s) corresponding to the values based on the parameter min_max
+        :param notifications_groupby_months:
+        :param min_max:
+        :return:
+        """
+        # Extrema = min or max (specified max_max input parameter)
+        if min_max == 'max':
+            extrema_notifications_month = [key for key, value in notifications_groupby_months.items()
+                                           if value == max(notifications_groupby_months.values())]
+        elif min_max == 'min':
+            extrema_notifications_month = [key for key, value in notifications_groupby_months.items()
+                                           if value == min(notifications_groupby_months.values())]
+        else:
+            raise ValueError("Please parse 'max' or 'min' as string for the max_min parameter.")
+
+        return [self._month_num_to_name(n) for n in extrema_notifications_month]
+
     """
     Database modules -- Modules that focus on the interaction with the database (all _maximo related moludes).
     """
@@ -126,10 +146,10 @@ class StoringsAnalyse(PrepNPlot):
         self.staging_file_path = "..\\staging file\\" + filename
         self.staging_file_data = pd.read_excel(self.staging_file_path)
 
-    def split_staging_file(self) -> str:
+    # Todo: output type aanpassen in documentatie
+    def split_staging_file(self) -> None:
         self.meldingen = self.staging_file_data
         self.storingen = self._isolate_notification_type(like_ntype='storingen')
-        return "Data available through the use of StoringsAnalyse.meldingen and StoringsAnalyse.storingen"
 
     def _get_ntype(self, like_ntype: str) -> str:
         if like_ntype is None:
