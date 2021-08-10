@@ -72,6 +72,8 @@ class StoringsAnalyse(PrepNPlot):
 
         self.quarter = quarter
         self.year = year
+        self.prev_quarter = self.quarter_sequence.get_prev_val(self.quarter)
+        self.prev_year = str(int(self.year) - 1)
 
         self.analysis_time_range = self.get_time_range()
         self.analysis_start_date = self.analysis_time_range[0]

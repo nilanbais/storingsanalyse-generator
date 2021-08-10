@@ -1,4 +1,8 @@
 """
+DEZE CLASS IS VEROUDERD. ER IS EEN NIEUWERE VERSIE ONTWIKKELD DIE NU WORDT ONDERHOUDEN.
+
+DIT DOCUMENT WORDT NIET ONDERHOUDEN.
+
 Class voor het berekenen van de verschillende van storingen per maand etc.
 
 Nu hoor ik u denken, "waarom niet gewoon in de code cellen van een jupyter notebook?" Nou, dat zal ik u uitleggen.

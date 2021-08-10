@@ -60,6 +60,7 @@ class MetadataStoringsAnalyse:
         self.filepath = self._get_filepath(project=project)
 
         self.tijdsregistratie = self.contract_info()["tijdsregistratie"]  # true or false
+        self.unsaved_new_meta = None
 
     def _get_filepath(self, project):
         _filename = [MetadataStoringsAnalyse._filepath_dict[key]
@@ -296,7 +297,7 @@ class MetadataStoringsAnalyse:
         return sum(notifications_per_q) / len(notifications_per_q)
 
     # todo: aanpassen in documentatie
-    # todo: finctie omschrijven zodat het werkt via => 'geeft me resultaten van maart' of 'geeft alleen Q4' (van alle jaren)
+    # todo: functie omschrijven zodat het werkt via => 'geeft me resultaten van maart' of 'geeft alleen Q4' (van alle jaren)
     def get_month_list(self, notification_type: str = 'melding', exclude_month: Union[List[str], str] = None, exclude_quarter: Union[List[str], str] = None, exclude_year: Union[List[str], str] = None) -> list:
         """
         Returns the list of all the keys that do not contain the specified excluded month or year.
@@ -389,6 +390,9 @@ class MetadataStoringsAnalyse:
         sum_per_code = self.make_ddict_frequency_table(dictionary=poo_dictionary)
         avg_table = {key: sum_per_code[key] / len(poo_dictionary) for key in sum_per_code.keys()}
         return self._order_frequency_table(avg_table)
+
+    def update_meta(self, staging_file_data, poo_data):
+        pass
 
 
 if __name__ == '__main__':
