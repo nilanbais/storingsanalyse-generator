@@ -19,50 +19,26 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
         StoringsAnalyse.__init__(self, project, api_key, rapport_type, quarter, year, path_to_staging_file)
         self.newline = "\n"
         self.tab = "\t"
+        print(f'self.staging from dg\n{self.staging_file_data}')
 
     """
     Managing modules -- Modules that fulfill some specific general task
     """
-    def _return_ntype_objects(self, ntype: str) -> Tuple[DataFrame, DataFrame]:
+    def _return_ntype_staging_file_object(self, ntype: str) -> DataFrame:
         if ntype.lower() == 'meldingen':
             staging_data_ntype = self.meldingen
-            meta_data_ntype = self.metadata.meldingen()
         elif ntype.lower() == 'storingen':
+            print(self.storingen)
             staging_data_ntype = self.storingen
-            meta_data_ntype = self.metadata.storingen()
         else:
             raise ValueError("Please parse 'meldingen' or 'storingen' as ntype.")
+        return staging_data_ntype
 
-        return staging_data_ntype, meta_data_ntype
-
-    @staticmethod
-    def _return_poo_type_string(poo_type: str) -> str:
-        if poo_type.lower() == 'probleem':
-            poo_string = poo_type.lower() + ' code'
-        elif poo_type.lower() == 'oorzaak':
-            poo_string = poo_type.lower() + ' code'
-        elif poo_type.lower() == 'oplossing':
-            poo_string = poo_type.lower() + ' code'
-        else:
-            raise ValueError("Please parse 'probleem', 'oorzaak' or 'oplossing' as poo_type.")
-
-        return poo_string
-
-    """
-    Chapter - Analyse
-        Paragraph - Aantal meldingen
-            Subsection - Aantal meldingen per maand
-            Subsection - Aantal meldingen per subsysteem
-        Paragraph - Aantal storingen
-            Subsection - Aantal storingen per maand
-            Subsection - Aantal storingen per subsysteem
-    """
-    def get_aantal_per_maand(self, ntype: str) -> dict:
-
-        staging_data_ntype, meta_data_ntype = self._return_ntype_objects(ntype=ntype)
+    def __aantal_per_maand(self, input_data: DataFrame, ntype: str) -> dict:
+        meta_data_ntype = self.metadata.return_ntype_meta_object(ntype=ntype)
 
         # Data voor in tekst ophalen
-        ntype_per_maand = self.staging_file_data['month_number'].value_counts()
+        ntype_per_maand = input_data['month_number'].value_counts()
 
         gemiddelde_per_maand = sum(ntype_per_maand) / len(ntype_per_maand)
 
@@ -76,14 +52,27 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
         kwartaal_gemiddelde = self.metadata.avg_quarterly(dictionary=meta_data_ntype)
 
         data_dict = {"ntype": ntype.lower(),
-                     "totaal_aantal": len(staging_data_ntype),
-                     "gemiddelde_per_maand": gemiddelde_per_maand,
+                     "totaal_aantal": len(input_data),
+                     "ntype_count_per_maand": ntype_per_maand,
+                     "gemiddelde_per_maand": gemiddelde_per_maand,  # just this quarter
                      "max_ntype_maand": max_ntype_maand,
                      "min_ntype_maand": min_ntype_maand,
-                     "maandelijks_gemiddelde": maandelijks_gemiddelde,
+                     "maandelijks_gemiddelde": maandelijks_gemiddelde,  # over the whole project
                      "kwartaal_gemiddelde": kwartaal_gemiddelde}
 
         return data_dict
+    """
+    Chapter - Analyse
+        Paragraph - Aantal meldingen
+            Subsection - Aantal meldingen per maand
+            Subsection - Aantal meldingen per subsysteem
+        Paragraph - Aantal storingen
+            Subsection - Aantal storingen per maand
+            Subsection - Aantal storingen per subsysteem
+    """
+    def get_aantal_per_maand(self, ntype: str) -> dict:
+        staging_data_ntype = self._return_ntype_staging_file_object(ntype=ntype)
+        return self.__aantal_per_maand(input_data=staging_data_ntype, ntype=ntype)
 
     def build_text_aantal_per_maand(self, input_data_dict: dict) -> str:
         text = f"""
@@ -93,13 +82,13 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
 
         Uit de grafiek valt het volgende te constateren:
 
-        • Het totaal aantal {input_data_dict["ntype"]} in {self.quarter} {self.year} : {input_data_dict["totaal_aantal_meldingen"]} 
+        • Het totaal aantal {input_data_dict["ntype"]} in {self.quarter} {self.year} : {input_data_dict["totaal_aantal"]} 
 
         • Het gemiddelde aantal {input_data_dict["ntype"]} per maand : {input_data_dict["gemiddelde_per_maand"]}
 
-        • Hoogste aantal {input_data_dict["ntype"]} in de maand{'en' if len(input_data_dict["max_meldingen_maand"]) > 1 else ''} {', '.join(input_data_dict["max_meldingen_maand"])}: {max(input_data_dict["meldingen_per_maand"])}
+        • Hoogste aantal {input_data_dict["ntype"]} in de maand{'en' if len(input_data_dict["max_ntype_maand"]) > 1 else ''} {', '.join(input_data_dict["max_ntype_maand"])}: {max(input_data_dict["ntype_count_per_maand"])}
 
-        • Laagste aantal {input_data_dict["ntype"]} in de maand{'en' if len(input_data_dict["min_meldingen_maand"]) > 1 else ''} {', '.join(input_data_dict["min_meldingen_maand"])}: {min(input_data_dict["meldingen_per_maand"])}
+        • Laagste aantal {input_data_dict["ntype"]} in de maand{'en' if len(input_data_dict["min_ntype_maand"]) > 1 else ''} {', '.join(input_data_dict["min_ntype_maand"])}: {min(input_data_dict["ntype_count_per_maand"])}
 
         • Het gemiddelde aantal {input_data_dict["ntype"]} per maand vanaf **{self.project_start_date}**: **{input_data_dict["maandelijks_gemiddelde"]}**
 
@@ -113,7 +102,8 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
         quarter, and a comparison of the current quarter with the selfme quarter of the previous year.
         :return:
         """
-        staging_data_ntype, meta_data_ntype = self._return_ntype_objects(ntype=ntype)
+        staging_data_ntype = self._return_ntype_staging_file_object(ntype=ntype)
+        meta_data_ntype = self.metadata.return_ntype_meta_object(ntype=ntype)
 
         # Aantal ntype in voorgaande q
         monthlist = self.metadata.get_keys(dictionary=meta_data_ntype, containing_quarter=[self.prev_quarter],
@@ -145,10 +135,10 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
 
     def get_aantal_per_subsysteem(self, ntype: str, threshold: int) -> dict:
 
-        staging_data_ntype, meta_data_ntype = self._return_ntype_objects(ntype=ntype)
+        staging_data_ntype = self._return_ntype_staging_file_object(ntype=ntype)
 
         # unieke types vastlegen
-        unique_types = list(staging_data_ntype.loc[:, 'sbs'].unique())
+        # unique_types = list(staging_data_ntype.loc[:, 'sbs'].unique())
 
         sbs_count = staging_data_ntype.loc[:, 'sbs'].value_counts()
 
@@ -214,7 +204,7 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
             Subsection - [subsectie voor elk uitgewerkte subsysteem. Title = subsystem_name]
     """
     def build_algemeen_intro(self) -> str:
-        staging_data_ntype, meta_data_ntype = self._return_ntype_objects(ntype='meldingen')
+        staging_data_ntype = self._return_ntype_staging_file_object(ntype='meldingen')
         sbs_count = staging_data_ntype.loc[:, 'sbs'].value_counts(dropna=False)
 
         text = f"""
@@ -237,7 +227,7 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
         """
         return text
 
-    def get_poo(self, poo_type: str, ) -> dict:
+    def get_poo_table_data(self, poo_type: str) -> dict:
         """
 
         :param poo_type:
@@ -245,13 +235,81 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
         """
         # todo: build a module to update the meta with the staging file poo data. this action gets easier when only
         #  needing to acces poo_from_meta
-        poo_type_count = self.meldingen[self._return_poo_type_string(poo_type)]
+        poo_type_string = self.metadata.return_poo_type_string(poo_type)
 
-        poo_beschrijving = self.metadata.contract_info()['POO_codes']
+        poo_type_count = self.meldingen[poo_type_string].value_counts(dropna=False).to_dict()
 
+        meta_poo_type = self.metadata.poo_data()[poo_type_string.split(' ')[0]]
 
-        data_dict = {}
+        poo_type_avg_table = self.metadata.poo_avg_table(poo_dictionary=meta_poo_type, poo_type=poo_type)
+
+        poo_beschrijvingen = self.metadata.contract_info()['POO_codes']
+
+        data_dict = dict()
+        for code in self.metadata.return_poo_code_list(poo_type):
+            code_counts = list()
+
+            for quarter in meta_poo_type.keys():
+                if code in meta_poo_type[quarter].keys():
+                    code_counts.append(self.metadata.sum_values(dictionary=meta_poo_type[quarter], keys=[code]))
+                else:
+                    code_counts.append(0)
+
+            totaal = sum(code_counts)
+            if code not in poo_type_count.keys():
+                line = ''.join((self.newline + '|' + code + '|' + poo_beschrijvingen[code] + '|' + str(0) + '|' + str(totaal) + '|' + str(poo_type_avg_table[code]) + '|'))
+                data_dict[code] = line
+                continue
+
+            line = ''.join((self.newline + '|' + code + '|' + poo_beschrijvingen[code] + '|' + str(poo_type_count[code]) + '|' + str(totaal + poo_type_count[code]) + '|' + str(poo_type_avg_table[code]) + '|'))
+            data_dict[code] = line
+
         return data_dict
+
+    @staticmethod
+    def build_poo_table(input_data_dict: dict) -> str:
+        text = """|Probleem|Beschrijving|Aantal|Totaal|Gemiddelde|
+        |--------|------------|------|------|----------|""" + ''.join((input_data_dict[code] for code in input_data_dict.keys()))
+        return text
+
+    def get_aantal_per_subsysteem_per_maand(self, threshold: int, ntype: str = 'meldingen') -> dict:
+        """
+
+        :param threshold:
+        :param ntype: default value = 'meldingen' because the standard analysis is preformed on the ntype 'meldingen'
+        :return:
+        """
+        staging_data_ntype = self._return_ntype_staging_file_object(ntype=ntype)
+        sf_data_groupby_sbs = staging_data_ntype.groupby('sbs')
+
+        _group_data_to_print = dict()
+        for group in sf_data_groupby_sbs.groups:
+            group_data = sf_data_groupby_sbs.get_group(group)
+
+            if len(group_data.index) < threshold:
+                continue
+
+            _group_data_to_print[group] = self.__aantal_per_maand(input_data=group_data, ntype=ntype)
+
+        sorted_keys = sorted(_group_data_to_print, key=lambda item: _group_data_to_print[item]['totaal_aantal'], reverse=True)
+        group_data_dict = {key: _group_data_to_print[key] for key in sorted_keys}
+        return group_data_dict
+
+    def build_aantal_per_subsysteem_per_maand(self, input_data_dict: dict) -> str:
+        """
+
+        :param input_data_dict: a dict of dicts for each subsystem a subdict
+        :return:
+        """
+        text = """"""
+        for sub_system in input_data_dict.keys():
+            sub_system_data = input_data_dict[sub_system]
+            print(f'subsystem {sub_system}\n{sub_system_data}')
+            sub_system_name = self._get_breakdown_description(sbs_lbs=sub_system)
+            print(sub_system_name, type(sub_system_name))
+            text = text + '# ' + str(sub_system) + sub_system_name + self.newline + self.build_text_aantal_per_maand(input_data_dict=sub_system_data)
+
+        return text
 
     """
     Chapter - Assets met de meeste meldingen
@@ -259,3 +317,11 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
         Paragraph - Uitwerking meldingen
         Paragraph - Conclusie
     """
+
+if __name__ == '__main__':
+    dg = DocumentGeneratorCoentunnel(project="Coentunnel-tracé",
+                                    rapport_type="Kwartaalrapportage",
+                                    quarter="Q2",
+                                    year="2021",
+                                    api_key='bWF4YWRtaW46R21iQ1dlbkQyMDE5',
+                                    path_to_staging_file='..\\staging file\\validating_input_data.xlsx')

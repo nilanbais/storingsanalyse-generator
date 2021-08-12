@@ -70,8 +70,8 @@ class StoringsAnalyse(PrepNPlot):
         self.project = project
         self.project_start_date = self.metadata.startdate()
 
-        self.quarter = quarter
-        self.year = year
+        self.quarter = self.metadata._quarter = quarter
+        self.year = self.metadata._year = year
         self.prev_quarter = self.quarter_sequence.get_prev_val(self.quarter)
         self.prev_year = str(int(self.year) - 1)
 
@@ -98,11 +98,11 @@ class StoringsAnalyse(PrepNPlot):
         return pd.DataFrame(description_data)
 
     def _get_breakdown_description(self, sbs_lbs: str) -> str:
-        sbs_lbs = '00' if sbs_lbs == '0' else sbs_lbs  # patch for Coentunnel
+        sbs_lbs = '0' if sbs_lbs == '00' else sbs_lbs  # patch for Coentunnel
         description = [self._ld_map.loc[str(index), 'description']
                        for index in range(self._ld_map.shape[0])
                        if sbs_lbs == self._ld_map.loc[str(index), 'location']]
-        return description[0] if len(description) > 0 else [""]  # To cover empty rows
+        return description[0] if len(description) > 0 else [""][0]  # To cover empty rows
 
     @staticmethod
     def _isolate_di_number(asset_num_string: str) -> str:
@@ -208,7 +208,8 @@ class StoringsAnalyse(PrepNPlot):
         """
         # Todo: functie omschrijven wanneer staging_file word weg gewerkt
         ntype = self._get_ntype(like_ntype=like_ntype)
-        return self.staging_file_data[self.staging_file_data['type melding (Storing/Incident/Preventief/Onterecht)'] == ntype]
+        result = self.staging_file_data[self.staging_file_data['type melding (Storing/Incident/Preventief/Onterecht)'] == ntype]
+        return result
 
     """
     Metadata modules -- Modules that focus on handling (preperation and transformation) of the input data.
