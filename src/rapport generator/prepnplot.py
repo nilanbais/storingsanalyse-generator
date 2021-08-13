@@ -594,7 +594,7 @@ class PrepNPlot:
     """
     Plot modules -- Modules that focus on setting up the parameters for plotting and plotting of the figure.
     """
-    def plot(self, input_data: List[list], plot_type: str, category_labels: list, bin_labels: list) -> Figure:
+    def plot(self, input_data: List[list], plot_type: str, category_labels: list, bin_labels: list, show_plot: bool = False) -> Figure:
         """
         Takes the result of prep and plots it.
         :param input_data:
@@ -649,12 +649,13 @@ class PrepNPlot:
         axis.legend()
 
         # fig.autofmt_xdate(rotation=45)
+        if show_plot:
+            plt.show()
 
-        plt.show()
         return fig
 
     @staticmethod
-    def plot_summary(x_labels: list, data: list) -> Figure:
+    def plot_summary(x_labels: list, data: list, show_plot: bool = False) -> Figure:
         """
         Takes the result of prep_summary and plots it.
         :param x_labels:
@@ -670,7 +671,9 @@ class PrepNPlot:
         axis.set_axisbelow(True)
         axis.grid(axis='y', linestyle='--')
 
-        plt.show()
+        if show_plot:
+            plt.show()
+
         return fig
 
 

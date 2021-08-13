@@ -86,7 +86,7 @@ class MetadataStoringsAnalyse:
 
         self.unsaved_updated_meta = None  # set by self.update_meta()
 
-    def _get_filepath(self, project):
+    def _get_filepath(self, project) -> str:
         _filename = [MetadataStoringsAnalyse._filepath_dict[key]
                      for key in MetadataStoringsAnalyse._filepath_dict.keys()
                      if project.lower() in key.lower()]
@@ -99,37 +99,37 @@ class MetadataStoringsAnalyse:
         rel_filepath = "..\\metadata\\" + self.filename
         return rel_filepath
 
-    def _read_json(self):
+    def _read_json(self) -> json:
         with open(self.filepath, 'r') as json_file:
             _data = json.load(json_file)
         return _data
 
-    def get_all_data(self):
+    def get_all_data(self) -> DataFrame:
         data = pd.json_normalize(data=self._read_json(), max_level=0)
         return data
 
-    def project(self):
+    def project(self) -> str:
         meta = self.get_all_data()
         return meta["project"][0]
 
-    def startdate(self):
+    def startdate(self) -> str:
         meta = self.get_all_data()
         return meta["start_datum"][0].replace('_', '-')
 
-    def contract_info(self):
+    def contract_info(self) -> dict:
         meta = self.get_all_data()
         return meta["contract_info"][0]
 
-    def meldingen(self):
+    def meldingen(self) -> dict:
         meta = self.get_all_data()
         return meta["meldingen"][0]
 
-    def storingen(self):
+    def storingen(self) -> dict:
         meta = self.get_all_data()
         return meta["storingen"][0]
 
     # todo: toevoegen aan documentatie + de aanpassing in de objectstructuur van de metadata documenteren
-    def poo_data(self):
+    def poo_data(self) -> dict:
         meta = self.get_all_data()
         return meta["poo_codes"][0]
 
@@ -475,7 +475,7 @@ class MetadataStoringsAnalyse:
         poo_data_meta = self.poo_data().copy()
         for poo in poo_data_meta.keys():
             # Exception in workflow for oplos code -> an definitive solution is needed when generating the staging file
-            col2read = 'oplos code' if poo == 'oplossing' else self.return_poo_type_string(poo)
+            col2read = self.return_poo_type_string(poo)
             value_count = staging_file_data[col2read].value_counts(dropna=False).to_dict()
             if np.nan in value_count:
                 value_count["Leeg"] = value_count[np.nan]
@@ -507,7 +507,6 @@ class MetadataStoringsAnalyse:
             # print(f'group var is type {type(group)}') gives 'type == int' though
             key = '0' + str(group) + '_' + str(self._year) if int(str(group)) < 10 else str(group) + '_' + str(self._year)
             new_ntype_data[key] = value_count
-            print(f'new_ntype_data looks like {new_ntype_data} after iteration {group}')
 
         # Adding new data at the end of existing data
         updated_meta_ntype_data = dict(**meta_ntype_data, **new_ntype_data)
@@ -515,17 +514,19 @@ class MetadataStoringsAnalyse:
 
     # todo: toevoegen in documentatie
     def update_meta(self, staging_file_data: DataFrame) -> None:
-        # copying full metadata object
-        self.unsaved_updated_meta = self.get_all_data().copy()
         # updating poo_codes
         updated_poo_data = self.update_poo_data(staging_file_data=staging_file_data)
-        self.unsaved_updated_meta['poo_codes'] = updated_poo_data
         # update meldingen
         updated_meldingen = self.update_ntype_data(staging_file_data=staging_file_data, ntype='meldingen')
-        self.unsaved_updated_meta['meldingen'] = updated_meldingen
         # update storingen
         updated_storingen = self.update_ntype_data(staging_file_data=staging_file_data, ntype='storingen')
-        self.unsaved_updated_meta['storingen'] = updated_storingen
+        print(type(self.contract_info()))
+        self.unsaved_updated_meta = {"project": self.project(),
+                                     "start_datum": self.startdate(),
+                                     "contract_info": self.contract_info(),
+                                     "poo_codes": updated_poo_data,
+                                     "meldingen": updated_meldingen,
+                                     "storingen": updated_storingen}
 
 
 if __name__ == '__main__':
@@ -575,3 +576,4 @@ if __name__ == '__main__':
     poo = metadata.poo_data()['probleem']
     print([metadata.sum_values(dictionary=poo[_], keys=['P05']) for _ in poo.keys()])
 
+    x = metadata.unsaved_updated_meta

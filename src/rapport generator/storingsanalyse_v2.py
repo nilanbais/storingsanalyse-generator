@@ -61,6 +61,7 @@ class StoringsAnalyse(PrepNPlot):
 
         self.meldingen = None  # set by split_staging_file
         self.storingen = None  # set by split_staging_file
+        self.sbs_patch(project=project)
         self.split_staging_file()
 
         # General parameters
@@ -70,10 +71,13 @@ class StoringsAnalyse(PrepNPlot):
         self.project = project
         self.project_start_date = self.metadata.startdate()
 
-        self.quarter = self.metadata._quarter = quarter
-        self.year = self.metadata._year = year
+        self.quarter = quarter
+        self.year = year
         self.prev_quarter = self.quarter_sequence.get_prev_val(self.quarter)
         self.prev_year = str(int(self.year) - 1)
+
+        self.metadata._quarter = quarter
+        self.metadata._year = year
 
         self.analysis_time_range = self.get_time_range()
         self.analysis_start_date = self.analysis_time_range[0]
@@ -82,6 +86,8 @@ class StoringsAnalyse(PrepNPlot):
         # Document parameters
         self.rapport_type = rapport_type
         self.graphs = []
+
+        self.metadata.update_meta(staging_file_data=self.staging_file_data)
 
     """
     Managing modules -- Modules that fulfill some specific general task
@@ -98,7 +104,6 @@ class StoringsAnalyse(PrepNPlot):
         return pd.DataFrame(description_data)
 
     def _get_breakdown_description(self, sbs_lbs: str) -> str:
-        sbs_lbs = '0' if sbs_lbs == '00' else sbs_lbs  # patch for Coentunnel
         description = [self._ld_map.loc[str(index), 'description']
                        for index in range(self._ld_map.shape[0])
                        if sbs_lbs == self._ld_map.loc[str(index), 'location']]
@@ -107,6 +112,22 @@ class StoringsAnalyse(PrepNPlot):
     @staticmethod
     def _isolate_di_number(asset_num_string: str) -> str:
         return asset_num_string.split('-')[0]
+
+    # todo: toevoegen aan documentatie
+    def return_ntype_staging_file_object(self, ntype: str) -> DataFrame:
+        if ntype.lower() == 'meldingen':
+            staging_data_ntype = self.meldingen
+        elif ntype.lower() == 'storingen':
+            staging_data_ntype = self.storingen
+        elif ntype.lower() == 'onterecht':
+            staging_data_ntype = self._isolate_notification_type(like_ntype='onterecht').copy()
+        elif ntype.lower() == 'preventief':
+            staging_data_ntype = self._isolate_notification_type(like_ntype='preventief').copy()
+        elif ntype.lower() == 'incident':
+            staging_data_ntype = self._isolate_notification_type(like_ntype='incident').copy()
+        else:
+            raise ValueError("Please parse 'meldingen' or 'storingen' as ntype.")
+        return staging_data_ntype
 
     # Todo: toevoegen aan documentatie
     def get_min_max_months(self, notifications_groupby_months: dict, min_max: str) -> list:
@@ -138,6 +159,25 @@ class StoringsAnalyse(PrepNPlot):
         start_date = datetime(year=int(self.year), month=int(months[0]), day=1)  # always start a first of the month
         end_date = start_date + timedelta(days=(time_delta_days - 1))  # timedelta is UP UNTIL the first day of next Q, - 1 days to get last day of current Q
         return [start_date, end_date]
+
+    # todo: toevoegen aan documentatie
+    """
+    Patch modules -- Modules that make adjustments that are easier/faster to change in a patch than to solve in source
+    """
+    def sbs_patch(self, project: str) -> None:
+        """
+        Patch for the different notation of the sbs numbers.
+        :param project:
+        :return:
+        """
+        if project.lower() in "coentunnel-tracé":
+            new_data = []
+            for sbs in self.staging_file_data['sbs']:
+                new_sbs = str(sbs).split('-')[0]  # change '45-10' -> '45'
+                new_sbs = '0' if new_sbs == '00' else new_sbs  # change '00' -> '0'
+                new_data.append(new_sbs)
+
+            self.staging_file_data['sbs'] = new_data
 
     """
     Database modules -- Modules that focus on the interaction with the database (all _maximo related moludes).
@@ -221,11 +261,11 @@ class StoringsAnalyse(PrepNPlot):
     def _add_graph_for_export(self, figure: Figure) -> None:
         self.graphs.append(figure)
 
-    def plot(self, input_data: List[list], plot_type: str, category_labels: list, bin_labels: list) -> None:
+    def plot(self, input_data: List[list], plot_type: str, category_labels: list, bin_labels: list, show_plot: bool = False) -> None:
         fig = PrepNPlot.plot(self, input_data, plot_type, category_labels, bin_labels)
         self._add_graph_for_export(fig)
 
-    def plot_summary(self, x_labels: list, data: list) -> None:
+    def plot_summary(self, x_labels: list, data: list, show_plot: bool = False) -> None:
         fig = PrepNPlot.plot_summary(x_labels, data)  # plot_summary is static in PrepNPlot so no 'self' here
         self._add_graph_for_export(fig)
 

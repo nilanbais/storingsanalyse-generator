@@ -8,48 +8,43 @@ Voor de Coentunnel wordt begonnen met het opbouwen van een class die specifiek v
 van dit process wordt er gekeken naar de mogelijkheden om het eerder beschreven idee te realiseren
 """
 from storingsanalyse_v2 import StoringsAnalyse
-from typing import Tuple
 from pandas import DataFrame
+import numpy as np
+import docx
+import os
 
 
 # todo: toevoegen aan documentatie
-class DocumentGeneratorCoentunnel(StoringsAnalyse):
+class DocumentGeneratorCoentunnel:
 
     def __init__(self, project: str, api_key: str, rapport_type: str, quarter: str, year: str, path_to_staging_file: str) -> None:
-        StoringsAnalyse.__init__(self, project, api_key, rapport_type, quarter, year, path_to_staging_file)
+        self.sa = StoringsAnalyse(project, api_key, rapport_type, quarter, year, path_to_staging_file)
         self.newline = "\n"
         self.tab = "\t"
-        print(f'self.staging from dg\n{self.staging_file_data}')
+
+        self._default_export_file_name = f"{self.sa.quarter}_{self.sa.year}_storingsanalyse_tekst.docx"
+        self._default_export_file_name_appendix = f"{self.sa.quarter}_{self.sa.year}_storingsanalyse_bijlage.pdf"
+
 
     """
     Managing modules -- Modules that fulfill some specific general task
     """
-    def _return_ntype_staging_file_object(self, ntype: str) -> DataFrame:
-        if ntype.lower() == 'meldingen':
-            staging_data_ntype = self.meldingen
-        elif ntype.lower() == 'storingen':
-            print(self.storingen)
-            staging_data_ntype = self.storingen
-        else:
-            raise ValueError("Please parse 'meldingen' or 'storingen' as ntype.")
-        return staging_data_ntype
-
     def __aantal_per_maand(self, input_data: DataFrame, ntype: str) -> dict:
-        meta_data_ntype = self.metadata.return_ntype_meta_object(ntype=ntype)
+        meta_data_ntype = self.sa.metadata.return_ntype_meta_object(ntype=ntype)
 
         # Data voor in tekst ophalen
         ntype_per_maand = input_data['month_number'].value_counts()
 
         gemiddelde_per_maand = sum(ntype_per_maand) / len(ntype_per_maand)
 
-        max_ntype_maand = self.get_min_max_months(ntype_per_maand.to_dict(), min_max='max')
-        min_ntype_maand = self.get_min_max_months(ntype_per_maand.to_dict(), min_max='min')
+        max_ntype_maand = self.sa.get_min_max_months(ntype_per_maand.to_dict(), min_max='max')
+        min_ntype_maand = self.sa.get_min_max_months(ntype_per_maand.to_dict(), min_max='min')
 
         # todo: excluse year aanpassen zodat het dynamisch is en niet gewoon '2020'
-        maanden = self.metadata.get_month_list(exclude_year='2020')
-        maandelijks_gemiddelde = self.metadata.avg_monthly(dictionary=meta_data_ntype, exclude_keys=maanden)
+        maanden = self.sa.metadata.get_month_list(exclude_year='2020')
+        maandelijks_gemiddelde = self.sa.metadata.avg_monthly(dictionary=meta_data_ntype, exclude_keys=maanden)
 
-        kwartaal_gemiddelde = self.metadata.avg_quarterly(dictionary=meta_data_ntype)
+        kwartaal_gemiddelde = self.sa.metadata.avg_quarterly(dictionary=meta_data_ntype)
 
         data_dict = {"ntype": ntype.lower(),
                      "totaal_aantal": len(input_data),
@@ -57,7 +52,7 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
                      "gemiddelde_per_maand": gemiddelde_per_maand,  # just this quarter
                      "max_ntype_maand": max_ntype_maand,
                      "min_ntype_maand": min_ntype_maand,
-                     "maandelijks_gemiddelde": maandelijks_gemiddelde,  # over the whole project
+                     "maandelijks_gemiddelde_start_project": maandelijks_gemiddelde,  # over the whole project
                      "kwartaal_gemiddelde": kwartaal_gemiddelde}
 
         return data_dict
@@ -71,7 +66,7 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
             Subsection - Aantal storingen per subsysteem
     """
     def get_aantal_per_maand(self, ntype: str) -> dict:
-        staging_data_ntype = self._return_ntype_staging_file_object(ntype=ntype)
+        staging_data_ntype = self.sa.return_ntype_staging_file_object(ntype=ntype)
         return self.__aantal_per_maand(input_data=staging_data_ntype, ntype=ntype)
 
     def build_text_aantal_per_maand(self, input_data_dict: dict) -> str:
@@ -82,7 +77,7 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
 
         Uit de grafiek valt het volgende te constateren:
 
-        • Het totaal aantal {input_data_dict["ntype"]} in {self.quarter} {self.year} : {input_data_dict["totaal_aantal"]} 
+        • Het totaal aantal {input_data_dict["ntype"]} in {self.sa.quarter} {self.sa.year} : {input_data_dict["totaal_aantal"]} 
 
         • Het gemiddelde aantal {input_data_dict["ntype"]} per maand : {input_data_dict["gemiddelde_per_maand"]}
 
@@ -90,9 +85,9 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
 
         • Laagste aantal {input_data_dict["ntype"]} in de maand{'en' if len(input_data_dict["min_ntype_maand"]) > 1 else ''} {', '.join(input_data_dict["min_ntype_maand"])}: {min(input_data_dict["ntype_count_per_maand"])}
 
-        • Het gemiddelde aantal {input_data_dict["ntype"]} per maand vanaf **{self.project_start_date}**: **{input_data_dict["maandelijks_gemiddelde"]}**
+        • Het gemiddelde aantal {input_data_dict["ntype"]} per maand vanaf {self.sa.project_start_date}: {input_data_dict["maandelijks_gemiddelde_start_project"]}
 
-        • Het gemiddelde aantal {input_data_dict["ntype"]} per kwartaal vanaf **{self.project_start_date}**: **{input_data_dict["kwartaal_gemiddelde"]}**
+        • Het gemiddelde aantal {input_data_dict["ntype"]} per kwartaal vanaf {self.sa.project_start_date}: {input_data_dict["kwartaal_gemiddelde"]}
         """
         return text
 
@@ -102,20 +97,20 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
         quarter, and a comparison of the current quarter with the selfme quarter of the previous year.
         :return:
         """
-        staging_data_ntype = self._return_ntype_staging_file_object(ntype=ntype)
-        meta_data_ntype = self.metadata.return_ntype_meta_object(ntype=ntype)
+        staging_data_ntype = self.sa.return_ntype_staging_file_object(ntype=ntype)
+        meta_data_ntype = self.sa.metadata.return_ntype_meta_object(ntype=ntype)
 
         # Aantal ntype in voorgaande q
-        monthlist = self.metadata.get_keys(dictionary=meta_data_ntype, containing_quarter=[self.prev_quarter],
-                                           containing_year=[self.prev_year])
-        ntype_gefilterd = self.metadata.filter_dictionary_keys(dictionary=meta_data_ntype, keys=monthlist)
-        totaal_ntype_voorgaand_kwartaal = self.metadata.sum_values(ntype_gefilterd)
+        monthlist = self.sa.metadata.get_keys(dictionary=meta_data_ntype, containing_quarter=[self.sa.prev_quarter],
+                                              containing_year=[self.sa.prev_year])
+        ntype_gefilterd = self.sa.metadata.filter_dictionary_keys(dictionary=meta_data_ntype, keys=monthlist)
+        totaal_ntype_voorgaand_kwartaal = self.sa.metadata.sum_values(ntype_gefilterd)
 
         # Aantal ntype in zelfde q voorgaand jaar
-        monthlist = self.metadata.get_keys(dictionary=meta_data_ntype, containing_quarter=[self.quarter],
-                                           containing_year=[self.prev_year])
-        ntype_gefilterd = self.metadata.filter_dictionary_keys(dictionary=meta_data_ntype, keys=monthlist)
-        totaal_ntype_zelfde_kwartaal = self.metadata.sum_values(ntype_gefilterd)
+        monthlist = self.sa.metadata.get_keys(dictionary=meta_data_ntype, containing_quarter=[self.sa.quarter],
+                                              containing_year=[self.sa.prev_year])
+        ntype_gefilterd = self.sa.metadata.filter_dictionary_keys(dictionary=meta_data_ntype, keys=monthlist)
+        totaal_ntype_zelfde_kwartaal = self.sa.metadata.sum_values(ntype_gefilterd)
 
         data_dict = {"ntype": ntype.lower(),
                      "totaal_aantal": len(staging_data_ntype),
@@ -125,17 +120,17 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
 
     def build_quarter_comparison(self, input_data_dict: dict) -> str:
         text = f"""
-        In {self.quarter} {self.prev_year} waren in totaal {input_data_dict["totaal_ntype_zelfde_kwartaal"]} {input_data_dict["ntype"]} gemaakt. In {self.quarter} {self.year} zijn er {input_data_dict["totaal_aantal"] - input_data_dict["totaal_ntype_zelfde_kwartaal"]} {input_data_dict["ntype"]} 
-        meer t.o.v. {self.quarter} {self.prev_year}. 
+        In {self.sa.quarter} {self.sa.prev_year} waren in totaal {input_data_dict["totaal_ntype_zelfde_kwartaal"]} {input_data_dict["ntype"]} gemaakt. In {self.sa.quarter} {self.sa.year} zijn er {input_data_dict["totaal_aantal"] - input_data_dict["totaal_ntype_zelfde_kwartaal"]} {input_data_dict["ntype"]} 
+        meer t.o.v. {self.sa.quarter} {self.sa.prev_year}. 
 
-        In **{self.prev_quarter} {self.year} waren in totaal {input_data_dict["totaal_ntype_voorgaande_kwartaal"]} {input_data_dict["ntype"]} gemaakt. In {self.quarter} {self.year} zijn er {input_data_dict["totaal_aantal"] - input_data_dict["totaal_ntype_voorgaande_kwartaal"]} {input_data_dict["ntype"]} 
-        meer t.o.v. **{self.prev_quarter}** **{self.year}**. 
+        In {self.sa.prev_quarter} {self.sa.year} waren in totaal {input_data_dict["totaal_ntype_voorgaande_kwartaal"]} {input_data_dict["ntype"]} gemaakt. In {self.sa.quarter} {self.sa.year} zijn er {input_data_dict["totaal_aantal"] - input_data_dict["totaal_ntype_voorgaande_kwartaal"]} {input_data_dict["ntype"]} 
+        meer t.o.v. {self.sa.prev_quarter} {self.sa.year}. 
         """
         return text
 
     def get_aantal_per_subsysteem(self, ntype: str, threshold: int) -> dict:
 
-        staging_data_ntype = self._return_ntype_staging_file_object(ntype=ntype)
+        staging_data_ntype = self.sa.return_ntype_staging_file_object(ntype=ntype)
 
         # unieke types vastlegen
         # unique_types = list(staging_data_ntype.loc[:, 'sbs'].unique())
@@ -150,19 +145,17 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
         for sbs in sbs_to_process:
             ntype_per_sbs = sbs_count[sbs]
             percentage_ntype = round((ntype_per_sbs / sum(sbs_count)) * 100, 2)
-            line = f"{self._get_breakdown_description(sbs)}{self.tab}- {ntype_per_sbs} meldingen ({percentage_ntype}% van het totale aantal meldingen)"
+            line = f"{self.sa._get_breakdown_description(sbs)}{self.tab}- {ntype_per_sbs} meldingen ({percentage_ntype}% van het totale aantal meldingen)"
             rows_to_process.append(line)
 
         # notification type
         ntypes = list(staging_data_ntype.loc[:, 'type melding (Storing/Incident/Preventief/Onterecht)'].unique())
-        print(ntypes)
 
         ntype_count = staging_data_ntype.loc[:, 'type melding (Storing/Incident/Preventief/Onterecht)'].value_counts()
-        print(ntype_count)
 
         lines_to_process = list()
         for n in ntypes:
-            line = f"{ntype_count[n]} meldingen zijn gecategoriseerd als {n}."
+            line = f"{ntype_count[n]} {ntype.lower()} zijn gecategoriseerd als {n}."
             lines_to_process.append(line)
 
         data_dict = {"ntype": ntype.lower(),
@@ -176,21 +169,21 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
 
     def build_text_aantal_per_subsysteem(self, input_data_dict: dict) -> str:
         text = f"""
-        Er wordt en Pareto analyse gemaakt van het totaal aantal meldingen per subsysteem. Deze is toegevoegd als bijlage. 
+        Er wordt en Pareto analyse gemaakt van het totaal aantal {input_data_dict['ntype']} per subsysteem. Deze is toegevoegd als bijlage. 
 
-        Uit de pareto blijkt dat in **{self.quarter}** **{self.prev_year}** een totaal van **{input_data_dict["totaal_aantal"]}** meldingen zijn gemeld, intern 
-        dan wel extern. Voor het overzicht zijn de meldingen bekeken met **{input_data_dict["threshold"]}** of meer 
-        meldingen. Dit is de top **{len(input_data_dict["sbs_to_process"])}** en heeft een totaal van **{sum(input_data_dict["sbs_count"][input_data_dict["sbs_to_process"]])}** meldingen van de in totaal 
-        **{input_data_dict["totaal_aantal"]}** (dit is **{round((sum(input_data_dict["sbs_count"][input_data_dict["sbs_to_process"]]) / input_data_dict["totaal_aantal"]) * 100, 2)}**% van het totaal). 
-        Hieronder staan de deelinstallatie**{'s' if len(input_data_dict["sbs_to_process"]) > 1 else ''}**:
-
-
-        {''.join((self.newline + '**-' + self.tab + line + '**' + self.newline for line in input_data_dict["rows_to_process"]))}
+        Uit de pareto blijkt dat in {self.sa.quarter} {self.sa.prev_year} een totaal van {input_data_dict["totaal_aantal"]} {input_data_dict['ntype']} zijn gemeld, intern 
+        dan wel extern. Voor het overzicht zijn de {input_data_dict['ntype']} bekeken met {input_data_dict["threshold"]} of meer 
+        {input_data_dict['ntype']}. Dit is de top {len(input_data_dict["sbs_to_process"])} en heeft een totaal van {sum(input_data_dict["sbs_count"][input_data_dict["sbs_to_process"]])} {input_data_dict['ntype']} van de in totaal 
+        {input_data_dict["totaal_aantal"]} (dit is {round((sum(input_data_dict["sbs_count"][input_data_dict["sbs_to_process"]]) / input_data_dict["totaal_aantal"]) * 100, 2)}% van het totaal). 
+        Hieronder staan de deelinstallatie{'s' if len(input_data_dict["sbs_to_process"]) > 1 else ''}:
 
 
-        De **{input_data_dict["totaal_aantal"]}** van **{self.quarter}** **{self.year}** zijn als volgt onder te verdelen:
+        {''.join((self.newline + '-' + self.tab + line + '' + self.newline for line in input_data_dict["rows_to_process"]))}
 
-        {''.join((self.newline + '**-' + self.tab + ntype_line + '**' + self.newline for ntype_line in input_data_dict["lines_to_process"]))}
+
+        De {input_data_dict["totaal_aantal"]} van {self.sa.quarter} {self.sa.year} zijn als volgt onder te verdelen:
+
+        {''.join((self.newline + '-' + self.tab + ntype_line + '' + self.newline for ntype_line in input_data_dict["lines_to_process"]))}
         """
         return text
 
@@ -203,8 +196,8 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
         Paragraph - Storingen per deelinstallatie
             Subsection - [subsectie voor elk uitgewerkte subsysteem. Title = subsystem_name]
     """
-    def build_algemeen_intro(self) -> str:
-        staging_data_ntype = self._return_ntype_staging_file_object(ntype='meldingen')
+    def build_conclusie_algemeen_intro(self) -> str:
+        staging_data_ntype = self.sa.return_ntype_staging_file_object(ntype='meldingen')
         sbs_count = staging_data_ntype.loc[:, 'sbs'].value_counts(dropna=False)
 
         text = f"""
@@ -214,7 +207,7 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
 
         Alle meldingen moeten aan een asset / sub niveau van een DI worden gekoppeld. 
         Zodat altijd is te herleiden wat precies is gefaald. Aan alle meldingen is een DI 
-        gekoppeld. Aan **{max(sbs_count[sbs_count.index.isnull()].values) if len(sbs_count[sbs_count.index.isnull()]) != 0 else 0}** werkorders zit geen sbs nummer gekoppeld. (zie besluit 5). 
+        gekoppeld. Aan {max(sbs_count[sbs_count.index.isnull()].values) if len(sbs_count[sbs_count.index.isnull()]) != 0 else 0} werkorders zit geen sbs nummer gekoppeld. (zie besluit 5). 
 
         De meldingen zijn gekoppeld aan een probleem, oorzaak en oplossing. 
 
@@ -235,23 +228,23 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
         """
         # todo: build a module to update the meta with the staging file poo data. this action gets easier when only
         #  needing to acces poo_from_meta
-        poo_type_string = self.metadata.return_poo_type_string(poo_type)
+        poo_type_string = self.sa.metadata.return_poo_type_string(poo_type)
 
-        poo_type_count = self.meldingen[poo_type_string].value_counts(dropna=False).to_dict()
+        poo_type_count = self.sa.meldingen[poo_type_string].value_counts(dropna=False).to_dict()
 
-        meta_poo_type = self.metadata.poo_data()[poo_type_string.split(' ')[0]]
+        meta_poo_type = self.sa.metadata.poo_data()[poo_type_string.split(' ')[0]]
 
-        poo_type_avg_table = self.metadata.poo_avg_table(poo_dictionary=meta_poo_type, poo_type=poo_type)
+        poo_type_avg_table = self.sa.metadata.poo_avg_table(poo_dictionary=meta_poo_type, poo_type=poo_type)
 
-        poo_beschrijvingen = self.metadata.contract_info()['POO_codes']
+        poo_beschrijvingen = self.sa.metadata.contract_info()['POO_codes']
 
         data_dict = dict()
-        for code in self.metadata.return_poo_code_list(poo_type):
+        for code in self.sa.metadata.return_poo_code_list(poo_type):
             code_counts = list()
 
             for quarter in meta_poo_type.keys():
                 if code in meta_poo_type[quarter].keys():
-                    code_counts.append(self.metadata.sum_values(dictionary=meta_poo_type[quarter], keys=[code]))
+                    code_counts.append(self.sa.metadata.sum_values(dictionary=meta_poo_type[quarter], keys=[code]))
                 else:
                     code_counts.append(0)
 
@@ -269,17 +262,17 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
     @staticmethod
     def build_poo_table(input_data_dict: dict) -> str:
         text = """|Probleem|Beschrijving|Aantal|Totaal|Gemiddelde|
-        |--------|------------|------|------|----------|""" + ''.join((input_data_dict[code] for code in input_data_dict.keys()))
+                  |--------|------------|------|------|----------|""" + ''.join((input_data_dict[code] for code in input_data_dict.keys()))
         return text
 
-    def get_aantal_per_subsysteem_per_maand(self, threshold: int, ntype: str = 'meldingen') -> dict:
+    def get_aantal_per_subsysteem_per_maand(self, threshold: int, ntype: str = 'storingen') -> dict:
         """
 
         :param threshold:
-        :param ntype: default value = 'meldingen' because the standard analysis is preformed on the ntype 'meldingen'
+        :param ntype: default value = 'storingen' because the standard analysis is preformed on the ntype 'storingen'
         :return:
         """
-        staging_data_ntype = self._return_ntype_staging_file_object(ntype=ntype)
+        staging_data_ntype = self.sa.return_ntype_staging_file_object(ntype=ntype)
         sf_data_groupby_sbs = staging_data_ntype.groupby('sbs')
 
         _group_data_to_print = dict()
@@ -304,10 +297,8 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
         text = """"""
         for sub_system in input_data_dict.keys():
             sub_system_data = input_data_dict[sub_system]
-            print(f'subsystem {sub_system}\n{sub_system_data}')
-            sub_system_name = self._get_breakdown_description(sbs_lbs=sub_system)
-            print(sub_system_name, type(sub_system_name))
-            text = text + '# ' + str(sub_system) + sub_system_name + self.newline + self.build_text_aantal_per_maand(input_data_dict=sub_system_data)
+            sub_system_name = self.sa._get_breakdown_description(sbs_lbs=sub_system)
+            text = text + '# ' + str(sub_system) + ' ' + sub_system_name + self.newline + self.build_text_aantal_per_maand(input_data_dict=sub_system_data) + self.newline
 
         return text
 
@@ -317,11 +308,377 @@ class DocumentGeneratorCoentunnel(StoringsAnalyse):
         Paragraph - Uitwerking meldingen
         Paragraph - Conclusie
     """
+    def get_asset_meeste_ntype_algemeen(self, threshold: int, ntype: str = 'meldingen') -> dict:
+        staging_file_ntype = self.sa.return_ntype_staging_file_object(ntype=ntype)
+
+        ntype_per_asset = staging_file_ntype['asset nummer'].value_counts()
+        ntype_per_asset = ntype_per_asset.reset_index()
+        ntype_per_asset.rename(columns={"asset nummer": "count", "index": "asset nummer"}, inplace=True)
+
+        list_descriptions = {staging_file_ntype['asset nummer'][index]: staging_file_ntype['asset beschrijving'][index]
+                             for index in range(staging_file_ntype.shape[0])}
+
+        # asset beschrijving ophalen van de asset nummers om op een latere regel toe te voegen aan df ntype_per_asset
+        asset_beschrijvingen = []
+        for index, row in ntype_per_asset.iterrows():
+            asset_num = row[0]
+            if asset_num in list_descriptions.keys():
+                asset_beschrijvingen.append(list_descriptions[asset_num])
+
+        # print(f'\nasset beschrijving = {asset_beschrijvingen}\n')
+
+        ntype_per_asset.at[:, 'asset beschrijving'] = asset_beschrijvingen
+
+        # ophalen van de sbs nummers van de assets
+        sbs_dict = dict()
+        for asset_num in ntype_per_asset.loc[:, 'asset nummer'].to_dict().values():
+            row = staging_file_ntype[staging_file_ntype.loc[:, 'asset nummer'] == asset_num]
+            sbs_dict[asset_num] = row['sbs'].unique()[0]
+
+        # bouwen van de lijst met regels data dide gepresenteerd moeten worden
+        data_dict = {"threshold": threshold,
+                     "lines": []}
+        lines2handle = ntype_per_asset[ntype_per_asset['count'] >= threshold]
+        for r in lines2handle.iterrows():
+            row = r[1]
+            line = ''.join((self.newline + '|' + str(self.sa._get_breakdown_description(sbs_dict[row[0]])) + '|' + str(row[-1]) + '|' + str(row[1]) + '|'))
+            data_dict['lines'].append(line)
+
+        return data_dict
+
+    @staticmethod
+    def build_asset_meeste_ntype_algemeen(input_dict: dict) -> str:
+        text = """|Deelinstallatie|Asset|Aantal|
+                  |---------------|-----|------|""" + ''.join((line for line in input_dict['lines']))
+        return text
+
+    def get_asset_uitwerking_ntypes(self, threshold: int, ntype: str = 'meldingen') -> dict:
+        staging_file_ntype = self.sa.return_ntype_staging_file_object(ntype=ntype)
+
+        ntype_per_asset = staging_file_ntype['asset nummer'].value_counts(dropna=False)
+
+        ntype_nan = ntype_per_asset.loc[np.nan] if np.nan in ntype_per_asset else 0
+
+        ntype_per_asset = ntype_per_asset[(x is not np.nan for x in list(ntype_per_asset.index))]
+        ntype_per_asset = ntype_per_asset.loc[ntype_per_asset >= threshold]
+
+        data_dict = {"ntype": ntype,
+                     "threshold": threshold,
+                     "ntype_nan": ntype_nan,
+                     "ntype_per_asset": ntype_per_asset}
+        return data_dict
+
+    def build_asset_uitwerking_ntypes(self, input_dict: dict):
+        staging_file_ntype = self.sa.return_ntype_staging_file_object(ntype=input_dict['ntype'])
+        text = f"""De assets met {input_dict['threshold']} of meer meldingen zijn hieronder uitgewerkt: 
+
+        Bij de {input_dict['ntype_per_asset']} meldingen is geen asset gekoppeld aan de werkorder.
+        """
+
+        columns2present = ['werkorder', 'status', 'rapport datum', 'werkorder beschrijving', 'sbs',
+                           'sbs omschrijving', 'locatie', 'locatie omschrijving', 'probleem code',
+                           'beschrijving probleem', 'oorzaak code', 'beschrijving oorzaak',
+                           'oplossing code', 'beschrijving oplossing', 'uitgevoerde werkzaamheden',
+                           'type melding (Storing/Incident/Preventief/Onterecht)']
+
+        for asset in list(input_dict['ntype_per_asset'].index):
+            df = staging_file_ntype[staging_file_ntype["asset nummer"] == asset].copy().reset_index()
+            line = f"""De {len(df)} meldingen van {df.loc[0, 'asset beschrijving']} worden hieronder gepresenteerd.
+                       {self.newline}{df.loc[:, columns2present]}{self.newline}"""
+            text = text + self.newline + line
+
+        return text
+
+    @staticmethod
+    def build_asset_conclusie(input_dict: dict) -> str:
+        """
+
+        :param input_dict: use datadict returned by get_asset_meeste_ntype_algemeen()
+        :return:
+        """
+        text = f"""Als wordt gekeken naar de oorzaken van de meldingen van de {len(input_dict['lines'])} assets welke {input_dict['threshold']} of 
+        meerdere meldingen hebben gehad, is bij somige assets repeterend en bij andere telkens verschillen.  
+
+        Het falen van deze assets hoeft niet verder worden bekeken of worden onderzocht. 
+        Dit omdat deze al reeds zijn behandeld bij de verschillende systemen. 
+        """
+        return text
+
+    def del_old_export(self):
+        if self._default_export_file_name in os.listdir(os.curdir):
+            print('Deleting old file')
+            os.remove(self._default_export_file_name)
+        else:
+            pass
+
+    def build_full_document(self, threshold: int = 3):
+        self.del_old_export()
+        print('Creating file ' + self._default_export_file_name)
+
+        doc = docx.Document()
+
+        doc.add_heading("Analyse", level=1)
+        doc.add_heading("Aantal meldingen", level=2)
+
+        meldingen_per_maand = doc.add_paragraph("")
+        meldingen_per_maand.add_run("Aantal meldingen per maand").bold = True
+        meldingen_per_maand.add_run(self.build_text_aantal_per_maand(self.get_aantal_per_maand(ntype='meldingen')))
+        meldingen_per_maand.add_run(self.build_quarter_comparison(self.get_quarter_comparison(ntype='meldingen')))
+        doc.save(self._default_export_file_name)
+
+        meldingen_per_subsysteem = doc.add_paragraph("")
+        meldingen_per_subsysteem.add_run("Aantal meldingen per subsysteem").bold = True
+        meldingen_per_subsysteem.add_run(self.build_text_aantal_per_subsysteem(self.get_aantal_per_subsysteem(ntype='meldingen', threshold=threshold)))
+        doc.save(self._default_export_file_name)
+
+        doc.add_heading("Aantal storingen", level=2)
+
+        storingen_per_maand = doc.add_paragraph("")
+        storingen_per_maand.add_run("Aantal storingen per maand").bold = True
+        storingen_per_maand.add_run(self.build_text_aantal_per_maand(self.get_aantal_per_maand(ntype='storingen')))
+        storingen_per_maand.add_run(self.build_quarter_comparison(self.get_quarter_comparison(ntype='storingen')))
+        doc.save(self._default_export_file_name)
+
+        storingen_per_subsysteem = doc.add_paragraph("")
+        storingen_per_subsysteem.add_run("Aantal storingen per subsysteem").bold = True
+        storingen_per_subsysteem.add_run(self.build_text_aantal_per_subsysteem(self.get_aantal_per_subsysteem(ntype='storingen', threshold=threshold)))
+        doc.save(self._default_export_file_name)
+
+        doc.add_heading("Conclusie/Aanbeveling", level=1)
+        doc.add_heading("Algemeen", level=2)
+
+        conclusie_algemeen = doc.add_paragraph("")
+        conclusie_algemeen.add_run(self.build_conclusie_algemeen_intro())
+        conclusie_algemeen.add_run("\n")
+        conclusie_algemeen.add_run("Probleem").bold = True
+        conclusie_algemeen.add_run("\n")
+        conclusie_algemeen.add_run(self.build_poo_table(self.get_poo_table_data('probleem')))
+        conclusie_algemeen.add_run("\n")
+        conclusie_algemeen.add_run("Oorzaak").bold = True
+        conclusie_algemeen.add_run("\n")
+        conclusie_algemeen.add_run(self.build_poo_table(self.get_poo_table_data('oorzaak')))
+        conclusie_algemeen.add_run("\n")
+        conclusie_algemeen.add_run("Oplossing").bold = True
+        conclusie_algemeen.add_run("\n")
+        conclusie_algemeen.add_run(self.build_poo_table(self.get_poo_table_data('oplossing')))
+        doc.save(self._default_export_file_name)
+
+        doc.add_heading("Storingen per deelinstallatie", level=2)
+
+        storingen_per_subsysteem_per_maand = doc.add_paragraph("")
+        storingen_per_subsysteem_per_maand.add_run("Uitwerking per deelinstallatie").bold = True
+        storingen_per_subsysteem_per_maand.add_run(self.build_aantal_per_subsysteem_per_maand(self.get_aantal_per_subsysteem_per_maand(threshold=threshold)))
+        doc.save(self._default_export_file_name)
+
+        doc.add_heading("Assets met de meeste meldingen", level=1)
+
+        asset_algemeen = doc.add_paragraph("")
+        asset_algemeen.add_run("Assets met de meeste meldingen").bold = True
+        asset_algemeen.add_run(self.build_asset_meeste_ntype_algemeen(self.get_asset_meeste_ntype_algemeen(threshold=threshold)))
+        doc.save(self._default_export_file_name)
+
+        asset_uitwerking = doc.add_paragraph("")
+        asset_uitwerking.add_run("Uitwerking meldingen").bold = True
+        asset_uitwerking.add_run(self.build_asset_uitwerking_ntypes(self.get_asset_uitwerking_ntypes(threshold=threshold)))
+        doc.save(self._default_export_file_name)
+
+        asset_conclusie = doc.add_paragraph("")
+        asset_conclusie.add_run("Conclusie").bold = True
+        asset_conclusie.add_run(self.build_asset_conclusie(self.get_asset_meeste_ntype_algemeen(threshold=threshold)))
+        doc.save(self._default_export_file_name)
+
+        print('Done. The file is stored at ' + os.getcwd())
+
+    def build_appendix(self, threshold: int = 0):
+        print('Creating file ' + self._default_export_file_name_appendix)
+
+        #
+        # Aantal meldingen per deelinstallatie
+        #
+        df = self.sa.return_ntype_staging_file_object(ntype='meldingen')
+        time_range = [min(df['rapport datum']), max(df['rapport datum'])]
+        available_categories = self.sa.metadata.contract_info()['aanwezige_deelinstallaties']
+
+        prepped_data = self.sa.prep(df, time_range, available_categories,
+                                    time_key='rapport datum', category_key='sbs')
+
+        readable_labels = [self.sa.prettify_time_label(label) for label in self.sa.last_seen_bin_names]
+        self.sa.plot(input_data=prepped_data, plot_type='stacked',
+                     category_labels=available_categories, bin_labels=readable_labels)
+
+        summary_data = self.sa.prep_summary(df, time_range, available_categories, time_key='rapport datum',
+                                            category_key='sbs')
+        self.sa.plot_summary(x_labels=[self.sa.prettify_time_label(label) for label in summary_data.keys()],
+                             data=list(summary_data.values()))
+
+        #
+        # Aantal storingen per deelinstallatie
+        #
+        df = self.sa.return_ntype_staging_file_object(ntype='storingen')
+
+        prepped_data = self.sa.prep(df, time_range, available_categories,
+                                    time_key='rapport datum', category_key='sbs')
+
+        # needed to cover 'nan', else ValueError: shape mismatch: objects cannot be broadcast to a single shape
+        readable_labels = [self.sa.prettify_time_label(label) for label in self.sa.last_seen_bin_names]
+        self.sa.plot(input_data=prepped_data, plot_type='stacked',
+                     category_labels=available_categories, bin_labels=readable_labels)
+
+        summary_data = self.sa.prep_summary(df, time_range, available_categories, time_key='rapport datum',
+                                            category_key='sbs')
+        self.sa.plot_summary(x_labels=[self.sa.prettify_time_label(label) for label in summary_data.keys()],
+                             data=list(summary_data.values()))
+
+        #
+        # Aantal onterechte meldingen per deelinstallatie
+        #
+        df = self.sa.return_ntype_staging_file_object(ntype='onterecht')
+
+        prepped_data = self.sa.prep(df, time_range, available_categories,
+                                    time_key='rapport datum', category_key='sbs')
+
+        readable_labels = [self.sa.prettify_time_label(label) for label in self.sa.last_seen_bin_names]
+
+        self.sa.plot(input_data=prepped_data, plot_type='stacked',
+                     category_labels=available_categories, bin_labels=readable_labels)
+
+        summary_data = self.sa.prep_summary(df, time_range, available_categories, time_key='rapport datum',
+                                            category_key='sbs')
+        self.sa.plot_summary(x_labels=[self.sa.prettify_time_label(label) for label in summary_data.keys()],
+                             data=list(summary_data.values()))
+
+        #
+        # Totaal aantal meldingen preventief per deelinstallatie
+        #
+        df = self.sa.return_ntype_staging_file_object(ntype='preventief')
+
+        prepped_data = self.sa.prep(df, time_range, available_categories,
+                                    time_key='rapport datum', category_key='sbs')
+
+        readable_labels = [self.sa.prettify_time_label(label) for label in self.sa.last_seen_bin_names]
+
+        self.sa.plot(input_data=prepped_data, plot_type='stacked',
+                     category_labels=available_categories, bin_labels=readable_labels)
+
+        summary_data = self.sa.prep_summary(df, time_range, available_categories, time_key='rapport datum',
+                                            category_key='sbs')
+        self.sa.plot_summary(x_labels=[self.sa.prettify_time_label(label) for label in summary_data.keys()],
+                             data=list(summary_data.values()))
+
+        #
+        # Aantal incidenten per deelinstallatie
+        #
+        df = self.sa.return_ntype_staging_file_object(ntype='incident')
+
+        prepped_data = self.sa.prep(df, time_range, available_categories,
+                                    time_key='rapport datum', category_key='sbs')
+
+        readable_labels = [self.sa.prettify_time_label(label) for label in self.sa.last_seen_bin_names]
+
+        self.sa.plot(input_data=prepped_data, plot_type='stacked',
+                     category_labels=available_categories, bin_labels=readable_labels)
+
+        summary_data = self.sa.prep_summary(df, time_range, available_categories, time_key='rapport datum',
+                                            category_key='sbs')
+        self.sa.plot_summary(x_labels=[self.sa.prettify_time_label(label) for label in summary_data.keys()],
+                             data=list(summary_data.values()))
+
+        # todo: tijden dynamisch maken
+        # Vergelijking voorgaande kwartaal met huidinge kwartaal
+        #
+        # Meldingen
+        #
+        prepped_data = self.sa.prep(self.sa.metadata.unsaved_updated_meta['meldingen'],
+                                    time_range=['10-2020', '03-2021'],
+                                    available_categories=available_categories,
+                                    time_key='rapport datum',
+                                    category_key='sbs',
+                                    bin_size='quarter')
+
+        self.sa.plot(input_data=prepped_data,
+                     plot_type='side-by-side',
+                     category_labels=available_categories,
+                     bin_labels=self.sa.last_seen_bin_names)
+
+        summary_data = self.sa.prep_summary(self.sa.metadata.unsaved_updated_meta['meldingen'],
+                                            time_range=['10-2020', '03-2021'],
+                                            available_categories=available_categories,
+                                            bin_size='quarter')
+
+        self.sa.plot_summary(x_labels=[self.sa.prettify_time_label(label) for label in summary_data.keys()],
+                             data=list(summary_data.values()))
+
+        #
+        # Storingen
+        #
+        prepped_data = self.sa.prep(self.sa.metadata.unsaved_updated_meta['storingen'],
+                                    time_range=['10-2020', '03-2021'],
+                                    available_categories=available_categories,
+                                    time_key='rapport datum',
+                                    category_key='sbs',
+                                    bin_size='quarter')
+
+        self.sa.plot(input_data=prepped_data,
+                     plot_type='side-by-side',
+                     category_labels=available_categories,
+                     bin_labels=self.sa.last_seen_bin_names)
+
+        summary_data = self.sa.prep_summary(self.sa.metadata.unsaved_updated_meta['storingen'],
+                                            time_range=['10-2020', '03-2021'],
+                                            available_categories=available_categories,
+                                            bin_size='quarter')
+
+        self.sa.plot_summary(x_labels=[self.sa.prettify_time_label(label) for label in summary_data.keys()],
+                             data=list(summary_data.values()))
+
+        #
+        # Verdeling type meldingen per deelinstallatie
+        #
+        df = self.sa.return_ntype_staging_file_object(ntype='meldingen')
+        df_groupby_sbs = df.groupby(['sbs'])
+
+        # unieke types vastlegen
+        unique_types = df.loc[:, 'type melding (Storing/Incident/Preventief/Onterecht)'].unique()
+
+        # cols kan voor een sandbox tool variabel gemaakt worden.
+        cols = ['type melding (Storing/Incident/Preventief/Onterecht)', 'month_number']
+
+        sbs_count = df.loc[:, 'sbs'].value_counts()
+        to_process = [x for x in sbs_count.index if sbs_count.at[x] >= threshold]
+        for di_num in to_process:
+            prepped_data = self.sa.prep(df_groupby_sbs.get_group(di_num),
+                                        time_range=['10-2020', '03-2021'],
+                                        available_categories=unique_types,
+                                        time_key='rapport datum',
+                                        category_key='type melding (Storing/Incident/Preventief/Onterecht)')
+
+            self.sa.plot(input_data=prepped_data,
+                         plot_type='stacked',
+                         category_labels=unique_types,
+                         bin_labels=[self.sa.prettify_time_label(label) for label in self.sa.last_seen_bin_names])
+
+            summary_data = self.sa.prep_summary(df_groupby_sbs.get_group(di_num),
+                                                time_range=['10-2020', '03-2021'],
+                                                available_categories=unique_types,
+                                                time_key='rapport datum',
+                                                category_key='type melding (Storing/Incident/Preventief/Onterecht)')
+
+            self.sa.plot_summary(x_labels=[self.sa.prettify_time_label(label) for label in summary_data.keys()],
+                                 data=list(summary_data.values()))
+
+        #
+        # Exporting appendix
+        #
+        self.sa.export_graphs(filename=self._default_export_file_name_appendix)
+        print('Done. The file is stored at ' + os.getcwd())
+
 
 if __name__ == '__main__':
     dg = DocumentGeneratorCoentunnel(project="Coentunnel-tracé",
-                                    rapport_type="Kwartaalrapportage",
-                                    quarter="Q2",
-                                    year="2021",
-                                    api_key='bWF4YWRtaW46R21iQ1dlbkQyMDE5',
-                                    path_to_staging_file='..\\staging file\\validating_input_data.xlsx')
+                                     rapport_type="Kwartaalrapportage",
+                                     quarter="Q2",
+                                     year="2021",
+                                     api_key='bWF4YWRtaW46R21iQ1dlbkQyMDE5',
+                                     path_to_staging_file='..\\staging file\\validating_input_data.xlsx')
+    dg.build_full_document()
+    dg.build_appendix()
