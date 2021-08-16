@@ -8,6 +8,8 @@ Met behulp van deze class wil ik dat het mogelijk wordt een soort ad hoc analyse
 sandbox omgeving wordt opgezet, waarin de gebruiker aan verschillende parameters kan 'draaien' om zo een specifiek
 inzicht te krijgen (bijv. storingen van twee di nummers enkel in de maanden april en december)
 
+
+
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -518,7 +520,17 @@ class PrepNPlot:
 
         return self._prep_end_step_summary(output_dict)
 
-    def prep(self, input_object: Union[DataFrame, dict], time_range: [datetime, datetime] or [str, str], available_categories: List[str], category_key: Optional[str] = None, time_key: Optional[str] = None, bin_size: Optional[str] = False) -> list:
+    def prep(self, input_object: Union[DataFrame, dict], time_range: [datetime, datetime] or [str, str], available_categories: List[str], category_key: Optional[str] = None, time_key: Optional[str] = None, bin_size: Optional[str] = False) -> Tuple[List[str], List[list]]:
+        """
+        returns the prepped list of lists with the corresponding category labels.
+        :param input_object:
+        :param time_range:
+        :param available_categories:
+        :param category_key:
+        :param time_key:
+        :param bin_size:
+        :return:
+        """
         # todo: Het kan zijn dat de functie gebruikt wordt en dat er geen time_range gespecificeerd kan worden
         #  (of dat men dat niet wil) dus er moet nog iets komen voor deze situaties
 
@@ -543,10 +555,12 @@ class PrepNPlot:
         """
         result_step_three = self._prep_end_step(input_dict=result_step_two, bin_names=self.last_seen_bin_names)
 
-        return result_step_three
+        categories, list_of_lists = self.filter_prep_output(list_of_lists=result_step_three, available_categories=available_categories)
+
+        return categories, list_of_lists
 
     # todo: documenteren
-    def test_prep(self, input_object: Union[DataFrame, dict], time_range: [datetime, datetime] or [str, str], available_categories: List[str], category_key: Optional[str] = None, time_key: Optional[str] = None, bin_size: Optional[str] = False) -> list:
+    def test_prep(self, input_object: Union[DataFrame, dict], time_range: [datetime, datetime] or [str, str], available_categories: List[str], category_key: Optional[str] = None, time_key: Optional[str] = None, bin_size: Optional[str] = False) -> Tuple[List[str], List[list]]:
         # todo: Het kan zijn dat de functie gebruikt wordt en dat er geen time_range gespecificeerd kan worden
         #  (of dat men dat niet wil) dus er moet nog iets komen voor deze situaties
 
@@ -571,7 +585,12 @@ class PrepNPlot:
         result_step_three = self._prep_end_step(input_dict=result_step_two, bin_names=self.last_seen_bin_names)
         print(f"result step three:\n{result_step_three}")
 
-        return result_step_three
+        categories, list_of_lists = self.filter_prep_output(list_of_lists=result_step_three, available_categories=available_categories)
+        print(f'result filter step:\n{categories, list_of_lists}')
+
+        print(len(categories), [len(_) for _ in list_of_lists])
+
+        return categories, list_of_lists
 
     def prep_summary(self, input_object: Union[DataFrame, dict], time_range: [datetime, datetime] or [str, str], available_categories: List[str], category_key: Optional[str] = None, time_key: Optional[str] = None, bin_size: Optional[str] = False) -> dict:
         _input_object = (input_object, time_key, category_key) if isinstance(input_object, DataFrame) else input_object
@@ -603,6 +622,8 @@ class PrepNPlot:
         :param bin_labels:
         :return:
         """
+        # Starts interactive mode for matplotlib pyplot
+        plt.ion()
         x_labels = sorted(category_labels)
         x_locations = np.arange(len(x_labels))  # todo: aanpassen van het automatisch bepalen
 
@@ -632,6 +653,7 @@ class PrepNPlot:
         else:
             raise ValueError("Please use a valid type as plot_type. Valid types are 'side-by-side' or 'stacked'.")
 
+        # todo: titels dynamisch maken
         # titel en namen van de assen
         axis.set_xlabel('Deelinstallatie nummers')
         axis.set_ylabel('Aantal')
@@ -648,9 +670,16 @@ class PrepNPlot:
 
         axis.legend()
 
+        # Stops interactive mode for matplotlib pyplot
+        plt.ioff()
+
         # fig.autofmt_xdate(rotation=45)
+
         if show_plot:
-            plt.show()
+            pass
+        #     plt.show()
+        else:
+            plt.close()
 
         return fig
 
@@ -662,19 +691,72 @@ class PrepNPlot:
         :param data:
         :return:
         """
+        # Starts interactive mode for matplotlib pyplot
+        plt.ion()
         fig, axis = plt.subplots()
         axis.bar(x_labels, data, width=0.3)
         axis.set_ylabel('Aantal')
+        # todo: titels dynamisch maken
         axis.set_title("Aantal meldingen per maand")  # todo: veranderen naar meldingen per {bin_size}
         axis.margins(x=.2, y=.2)
 
         axis.set_axisbelow(True)
         axis.grid(axis='y', linestyle='--')
 
+        # Stops interactive mode for matplotlib pyplot
+        plt.ioff()
+
         if show_plot:
-            plt.show()
+            pass
+            # plt.show()
+        else:
+            plt.close()
 
         return fig
+
+    # todo: toevoegen aan documentatie
+    @staticmethod
+    def filter_prep_output(list_of_lists: List[list], available_categories: List[str]) -> Tuple[List[str], List[list]]:
+        """
+        This module filers the prep_output to return a modified copy of the list_of_lists (LOL) and the list of
+        corresponding available categories, where all the categories of which all the values in the LOL are '0'
+        are filtered out. Both the objects NEED TO BE sorted and stay in that order.
+        IMPORTANT -----------------------------------------------------------------------------------------------
+            The list with the available categories needs to be sorted. The function build_output_first_step takes
+            the available categories and sorts them when using them. This means that the list of lists created is
+            in the order of the sorted available categories.
+        ---------------------------------------------------------------------------------------------------------
+        :param list_of_lists:
+        :param available_categories:
+        :return:
+        """
+        _data_package = dict()
+        for i in range(len(list_of_lists)):
+            _data_package[i] = list_of_lists[i]
+
+        print(f'_data_package = {_data_package}')
+        print(f'_data_package.values() = {_data_package.values()}')
+        for category, items in zip(sorted(available_categories), *_data_package.values()):
+            print(category, items)
+
+        # todo: line 739 begin daar
+        list1, list2, list3 = list_of_lists
+
+        returncategories = list()
+        returnlist1 = list()
+        returnlist2 = list()
+        returnlist3 = list()
+
+        for category, item_l1, item_l2, item_l3 in zip(sorted(available_categories), list1, list2, list3):
+            if sum([item_l1, item_l2, item_l3]) > 0:  # we want to exclude categories were all items are 0
+                returncategories.append(category)
+                returnlist1.append(item_l1)
+                returnlist2.append(item_l2)
+                returnlist3.append(item_l3)
+            else:
+                pass
+
+        return returncategories, [returnlist1, returnlist2, returnlist3]
 
 
 if __name__ == '__main__':

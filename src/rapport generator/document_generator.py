@@ -487,7 +487,7 @@ class DocumentGeneratorCoentunnel:
         asset_conclusie.add_run(self.build_asset_conclusie(self.get_asset_meeste_ntype_algemeen(threshold=threshold)))
         doc.save(self._default_export_file_name)
 
-        print('Done. The file is stored at ' + os.getcwd())
+        print('Done. The text file is stored at ' + os.getcwd())
 
     def build_appendix(self, threshold: int = 0):
         print('Creating file ' + self._default_export_file_name_appendix)
@@ -499,12 +499,12 @@ class DocumentGeneratorCoentunnel:
         time_range = [min(df['rapport datum']), max(df['rapport datum'])]
         available_categories = self.sa.metadata.contract_info()['aanwezige_deelinstallaties']
 
-        prepped_data = self.sa.prep(df, time_range, available_categories,
-                                    time_key='rapport datum', category_key='sbs')
+        categories, prepped_data = self.sa.prep(df, time_range, available_categories,
+                                                time_key='rapport datum', category_key='sbs')
 
         readable_labels = [self.sa.prettify_time_label(label) for label in self.sa.last_seen_bin_names]
         self.sa.plot(input_data=prepped_data, plot_type='stacked',
-                     category_labels=available_categories, bin_labels=readable_labels)
+                     category_labels=categories, bin_labels=readable_labels)
 
         summary_data = self.sa.prep_summary(df, time_range, available_categories, time_key='rapport datum',
                                             category_key='sbs')
@@ -516,13 +516,13 @@ class DocumentGeneratorCoentunnel:
         #
         df = self.sa.return_ntype_staging_file_object(ntype='storingen')
 
-        prepped_data = self.sa.prep(df, time_range, available_categories,
-                                    time_key='rapport datum', category_key='sbs')
+        categories, prepped_data = self.sa.prep(df, time_range, available_categories,
+                                                time_key='rapport datum', category_key='sbs')
 
         # needed to cover 'nan', else ValueError: shape mismatch: objects cannot be broadcast to a single shape
         readable_labels = [self.sa.prettify_time_label(label) for label in self.sa.last_seen_bin_names]
         self.sa.plot(input_data=prepped_data, plot_type='stacked',
-                     category_labels=available_categories, bin_labels=readable_labels)
+                     category_labels=categories, bin_labels=readable_labels)
 
         summary_data = self.sa.prep_summary(df, time_range, available_categories, time_key='rapport datum',
                                             category_key='sbs')
@@ -534,13 +534,13 @@ class DocumentGeneratorCoentunnel:
         #
         df = self.sa.return_ntype_staging_file_object(ntype='onterecht')
 
-        prepped_data = self.sa.prep(df, time_range, available_categories,
-                                    time_key='rapport datum', category_key='sbs')
+        categories, prepped_data = self.sa.prep(df, time_range, available_categories,
+                                                time_key='rapport datum', category_key='sbs')
 
         readable_labels = [self.sa.prettify_time_label(label) for label in self.sa.last_seen_bin_names]
 
         self.sa.plot(input_data=prepped_data, plot_type='stacked',
-                     category_labels=available_categories, bin_labels=readable_labels)
+                     category_labels=categories, bin_labels=readable_labels)
 
         summary_data = self.sa.prep_summary(df, time_range, available_categories, time_key='rapport datum',
                                             category_key='sbs')
@@ -552,13 +552,13 @@ class DocumentGeneratorCoentunnel:
         #
         df = self.sa.return_ntype_staging_file_object(ntype='preventief')
 
-        prepped_data = self.sa.prep(df, time_range, available_categories,
-                                    time_key='rapport datum', category_key='sbs')
+        categories, prepped_data = self.sa.prep(df, time_range, available_categories,
+                                                time_key='rapport datum', category_key='sbs')
 
         readable_labels = [self.sa.prettify_time_label(label) for label in self.sa.last_seen_bin_names]
 
         self.sa.plot(input_data=prepped_data, plot_type='stacked',
-                     category_labels=available_categories, bin_labels=readable_labels)
+                     category_labels=categories, bin_labels=readable_labels)
 
         summary_data = self.sa.prep_summary(df, time_range, available_categories, time_key='rapport datum',
                                             category_key='sbs')
@@ -570,13 +570,13 @@ class DocumentGeneratorCoentunnel:
         #
         df = self.sa.return_ntype_staging_file_object(ntype='incident')
 
-        prepped_data = self.sa.prep(df, time_range, available_categories,
-                                    time_key='rapport datum', category_key='sbs')
+        categories, prepped_data = self.sa.test_prep(df, time_range, available_categories,
+                                                time_key='rapport datum', category_key='sbs')
 
         readable_labels = [self.sa.prettify_time_label(label) for label in self.sa.last_seen_bin_names]
 
         self.sa.plot(input_data=prepped_data, plot_type='stacked',
-                     category_labels=available_categories, bin_labels=readable_labels)
+                     category_labels=categories, bin_labels=readable_labels)
 
         summary_data = self.sa.prep_summary(df, time_range, available_categories, time_key='rapport datum',
                                             category_key='sbs')
@@ -588,16 +588,16 @@ class DocumentGeneratorCoentunnel:
         #
         # Meldingen
         #
-        prepped_data = self.sa.prep(self.sa.metadata.unsaved_updated_meta['meldingen'],
-                                    time_range=['10-2020', '03-2021'],
-                                    available_categories=available_categories,
-                                    time_key='rapport datum',
-                                    category_key='sbs',
-                                    bin_size='quarter')
+        categories, prepped_data = self.sa.prep(self.sa.metadata.unsaved_updated_meta['meldingen'],
+                                                time_range=['10-2020', '03-2021'],
+                                                available_categories=available_categories,
+                                                time_key='rapport datum',
+                                                category_key='sbs',
+                                                bin_size='quarter')
 
         self.sa.plot(input_data=prepped_data,
                      plot_type='side-by-side',
-                     category_labels=available_categories,
+                     category_labels=categories,
                      bin_labels=self.sa.last_seen_bin_names)
 
         summary_data = self.sa.prep_summary(self.sa.metadata.unsaved_updated_meta['meldingen'],
@@ -611,16 +611,16 @@ class DocumentGeneratorCoentunnel:
         #
         # Storingen
         #
-        prepped_data = self.sa.prep(self.sa.metadata.unsaved_updated_meta['storingen'],
-                                    time_range=['10-2020', '03-2021'],
-                                    available_categories=available_categories,
-                                    time_key='rapport datum',
-                                    category_key='sbs',
-                                    bin_size='quarter')
+        categories, prepped_data = self.sa.prep(self.sa.metadata.unsaved_updated_meta['storingen'],
+                                                time_range=['10-2020', '03-2021'],
+                                                available_categories=available_categories,
+                                                time_key='rapport datum',
+                                                category_key='sbs',
+                                                bin_size='quarter')
 
         self.sa.plot(input_data=prepped_data,
                      plot_type='side-by-side',
-                     category_labels=available_categories,
+                     category_labels=categories,
                      bin_labels=self.sa.last_seen_bin_names)
 
         summary_data = self.sa.prep_summary(self.sa.metadata.unsaved_updated_meta['storingen'],
@@ -646,15 +646,15 @@ class DocumentGeneratorCoentunnel:
         sbs_count = df.loc[:, 'sbs'].value_counts()
         to_process = [x for x in sbs_count.index if sbs_count.at[x] >= threshold]
         for di_num in to_process:
-            prepped_data = self.sa.prep(df_groupby_sbs.get_group(di_num),
-                                        time_range=['10-2020', '03-2021'],
-                                        available_categories=unique_types,
-                                        time_key='rapport datum',
-                                        category_key='type melding (Storing/Incident/Preventief/Onterecht)')
+            categories, prepped_data = self.sa.prep(df_groupby_sbs.get_group(di_num),
+                                                    time_range=['10-2020', '03-2021'],
+                                                    available_categories=unique_types,
+                                                    time_key='rapport datum',
+                                                    category_key='type melding (Storing/Incident/Preventief/Onterecht)')
 
             self.sa.plot(input_data=prepped_data,
                          plot_type='stacked',
-                         category_labels=unique_types,
+                         category_labels=categories,
                          bin_labels=[self.sa.prettify_time_label(label) for label in self.sa.last_seen_bin_names])
 
             summary_data = self.sa.prep_summary(df_groupby_sbs.get_group(di_num),
@@ -670,10 +670,16 @@ class DocumentGeneratorCoentunnel:
         # Exporting appendix
         #
         self.sa.export_graphs(filename=self._default_export_file_name_appendix)
-        print('Done. The file is stored at ' + os.getcwd())
+        print('Done. The appendix file is stored at ' + os.getcwd())
 
 
-if __name__ == '__main__':
+def main():
+    """
+    function to include the main functionality. If not defined like this and everything is imported using *. all
+    variables defined in if __name__ == '__main__': will be imported too and clutters the executing code (maybe
+    also introduce bugs).
+    :return:
+    """
     dg = DocumentGeneratorCoentunnel(project="Coentunnel-tracé",
                                      rapport_type="Kwartaalrapportage",
                                      quarter="Q2",
@@ -682,3 +688,7 @@ if __name__ == '__main__':
                                      path_to_staging_file='..\\staging file\\validating_input_data.xlsx')
     dg.build_full_document()
     dg.build_appendix()
+
+
+if __name__ == '__main__':
+    main()

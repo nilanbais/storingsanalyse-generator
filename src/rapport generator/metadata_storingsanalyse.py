@@ -520,7 +520,6 @@ class MetadataStoringsAnalyse:
         updated_meldingen = self.update_ntype_data(staging_file_data=staging_file_data, ntype='meldingen')
         # update storingen
         updated_storingen = self.update_ntype_data(staging_file_data=staging_file_data, ntype='storingen')
-        print(type(self.contract_info()))
         self.unsaved_updated_meta = {"project": self.project(),
                                      "start_datum": self.startdate(),
                                      "contract_info": self.contract_info(),
