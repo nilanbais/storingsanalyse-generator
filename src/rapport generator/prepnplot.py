@@ -534,9 +534,6 @@ class PrepNPlot:
         # todo: Het kan zijn dat de functie gebruikt wordt en dat er geen time_range gespecificeerd kan worden
         #  (of dat men dat niet wil) dus er moet nog iets komen voor deze situaties
 
-        # todo: filter als laatste stap. In deze stap moeten de keys die in geen enkele lijst van de lijst van
-        #  lijsten voorkomt, worden verwijderd uit de dictionary.
-
         # todo: Module schrijven voor functionaliteit dat kwartalen van verschillende jaren vergeleken kunnen worden.
 
         _input_object = (input_object, time_key, category_key) if isinstance(input_object, DataFrame) else input_object
@@ -613,13 +610,15 @@ class PrepNPlot:
     """
     Plot modules -- Modules that focus on setting up the parameters for plotting and plotting of the figure.
     """
-    def plot(self, input_data: List[list], plot_type: str, category_labels: list, bin_labels: list, show_plot: bool = False) -> Figure:
+    def plot(self, input_data: List[list], plot_type: str, category_labels: list, bin_labels: list, title: str, show_plot: bool = False) -> Figure:
         """
         Takes the result of prep and plots it.
         :param input_data:
         :param plot_type:
         :param category_labels:
         :param bin_labels:
+        :param title:
+        :param show_plot:
         :return:
         """
         # Starts interactive mode for matplotlib pyplot
@@ -627,9 +626,10 @@ class PrepNPlot:
         x_labels = sorted(category_labels)
         x_locations = np.arange(len(x_labels))  # todo: aanpassen van het automatisch bepalen
 
-        legend_names = list(bin_labels)  # todo: bin labels omvormen tot iets leesbaars (03_2018 -> maart 2018)
+        legend_names = list(bin_labels)
 
-        fig, axis = plt.subplots(figsize=(len(x_labels), 5))
+        # fig, axis = plt.subplots(figsize=(len(x_labels), 5))
+        fig, axis = plt.subplots()
 
         bar_width = 0.2
 
@@ -644,8 +644,8 @@ class PrepNPlot:
             prev = []
             for i in range(len(input_data)):
                 # added case for loop l = 0 after if
-                axis.bar(x_labels, input_data[i], bar_width, label=legend_names[i], bottom=prev) if i > 0 else \
-                    axis.bar(x_labels, input_data[i], bar_width, label=legend_names[i])
+                axis.bar(x=x_labels, height=input_data[i], width=bar_width, label=legend_names[i], bottom=prev) if i > 0 else \
+                    axis.bar(x=x_labels, height=input_data[i], width=bar_width, label=legend_names[i])
 
                 # prev sets the height of the newly added values like above
                 # the added list needs to be added to prev to get the correct height
@@ -653,11 +653,9 @@ class PrepNPlot:
         else:
             raise ValueError("Please use a valid type as plot_type. Valid types are 'side-by-side' or 'stacked'.")
 
-        # todo: titels dynamisch maken
         # titel en namen van de assen
-        axis.set_xlabel('Deelinstallatie nummers')
         axis.set_ylabel('Aantal')
-        axis.set_title("Aantal storingen per deelinstallatie")
+        axis.set_title(title.title())
 
         # namen langs de assen
         axis.set_xticks(x_locations + bar_width / len(input_data))
@@ -675,20 +673,18 @@ class PrepNPlot:
 
         # fig.autofmt_xdate(rotation=45)
 
-        if show_plot:
-            pass
-        #     plt.show()
-        else:
-            plt.close()
+        plt.show() if show_plot else plt.close()
 
         return fig
 
     @staticmethod
-    def plot_summary(x_labels: list, data: list, show_plot: bool = False) -> Figure:
+    def plot_summary(x_labels: list, data: list, title: str, show_plot: bool = False) -> Figure:
         """
         Takes the result of prep_summary and plots it.
         :param x_labels:
         :param data:
+        :param title:
+        :param show_plot:
         :return:
         """
         # Starts interactive mode for matplotlib pyplot
@@ -696,8 +692,7 @@ class PrepNPlot:
         fig, axis = plt.subplots()
         axis.bar(x_labels, data, width=0.3)
         axis.set_ylabel('Aantal')
-        # todo: titels dynamisch maken
-        axis.set_title("Aantal meldingen per maand")  # todo: veranderen naar meldingen per {bin_size}
+        axis.set_title(title.title())
         axis.margins(x=.2, y=.2)
 
         axis.set_axisbelow(True)
@@ -707,8 +702,7 @@ class PrepNPlot:
         plt.ioff()
 
         if show_plot:
-            pass
-            # plt.show()
+            plt.show()
         else:
             plt.close()
 
@@ -734,29 +728,16 @@ class PrepNPlot:
         for i in range(len(list_of_lists)):
             _data_package[i] = list_of_lists[i]
 
-        print(f'_data_package = {_data_package}')
-        print(f'_data_package.values() = {_data_package.values()}')
-        for category, items in zip(sorted(available_categories), *_data_package.values()):
-            print(category, items)
+        result_categories = list()
+        result_list_of_lists = [list() for _ in range(len(list_of_lists))]
 
-        # todo: line 739 begin daar
-        list1, list2, list3 = list_of_lists
+        for category, items in zip(sorted(available_categories), zip(*_data_package.values())):
+            if sum(items) > 0:
+                result_categories.append(category)
+                for i in range(len(items)):
+                    result_list_of_lists[i].append(items[i])
 
-        returncategories = list()
-        returnlist1 = list()
-        returnlist2 = list()
-        returnlist3 = list()
-
-        for category, item_l1, item_l2, item_l3 in zip(sorted(available_categories), list1, list2, list3):
-            if sum([item_l1, item_l2, item_l3]) > 0:  # we want to exclude categories were all items are 0
-                returncategories.append(category)
-                returnlist1.append(item_l1)
-                returnlist2.append(item_l2)
-                returnlist3.append(item_l3)
-            else:
-                pass
-
-        return returncategories, [returnlist1, returnlist2, returnlist3]
+        return result_categories, result_list_of_lists
 
 
 if __name__ == '__main__':

@@ -261,12 +261,12 @@ class StoringsAnalyse(PrepNPlot):
     def _add_graph_for_export(self, figure: Figure) -> None:
         self.graphs.append(figure)
 
-    def plot(self, input_data: List[list], plot_type: str, category_labels: list, bin_labels: list, show_plot: bool = False) -> None:
-        fig = PrepNPlot.plot(self, input_data, plot_type, category_labels, bin_labels)
+    def plot(self, input_data: List[list], plot_type: str, category_labels: list, bin_labels: list, title: str, show_plot: bool = False) -> None:
+        fig = PrepNPlot.plot(self, input_data, plot_type, category_labels, bin_labels, title=title)
         self._add_graph_for_export(fig)
 
-    def plot_summary(self, x_labels: list, data: list, show_plot: bool = False) -> None:
-        fig = PrepNPlot.plot_summary(x_labels, data)  # plot_summary is static in PrepNPlot so no 'self' here
+    def plot_summary(self, x_labels: list, data: list, title: str, show_plot: bool = False) -> None:
+        fig = PrepNPlot.plot_summary(x_labels, data, title=title)  # plot_summary is static
         self._add_graph_for_export(fig)
 
     def export_graphs(self, filename: str) -> None:
