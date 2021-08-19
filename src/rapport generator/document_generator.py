@@ -12,6 +12,7 @@ from pandas import DataFrame
 import numpy as np
 import docx
 import os
+from typing import Union, Tuple, Iterable
 
 
 # todo: toevoegen aan documentatie
@@ -22,9 +23,8 @@ class DocumentGeneratorCoentunnel:
         self.newline = "\n"
         self.tab = "\t"
 
-        self._default_export_file_name = f"{self.sa.quarter}_{self.sa.year}_storingsanalyse_tekst.docx"
+        self._default_export_file_name = f"TABLE_TEST_{self.sa.quarter}_{self.sa.year}_storingsanalyse_tekst.docx"
         self._default_export_file_name_appendix = f"{self.sa.quarter}_{self.sa.year}_storingsanalyse_bijlage.pdf"
-
 
     """
     Managing modules -- Modules that fulfill some specific general task
@@ -56,6 +56,29 @@ class DocumentGeneratorCoentunnel:
                      "kwartaal_gemiddelde": kwartaal_gemiddelde}
 
         return data_dict
+
+    def build_table_docx(self, docx_object: docx.Document, headers: Tuple, row_data: Iterable[Union[str, str, str]]) -> None:
+        table = docx_object.add_table(1, cols=len(headers))
+        # Adding headers
+        row = table.rows[0].cells
+        for i in range(len(headers)):
+            row[i].text = headers[i]
+
+        # Adding data from the input_dict
+        for data in row_data:
+            row = table.add_row().cells
+            for i in range(len(data)):
+                row[i].text = str(data[i])
+
+        docx_object.save(self._default_export_file_name)
+
+    def del_old_export(self):
+        if self._default_export_file_name in os.listdir(os.curdir):
+            print('Deleting old file')
+            os.remove(self._default_export_file_name)
+        else:
+            pass
+
     """
     Chapter - Analyse
         Paragraph - Aantal meldingen
@@ -220,9 +243,10 @@ class DocumentGeneratorCoentunnel:
         """
         return text
 
-    def get_poo_table_data(self, poo_type: str) -> dict:
+    def get_poo_table_data_md(self, poo_type: str) -> dict:
         """
-
+        Retrieves/collects the data for the poo table in a way that is compatible wit the module that builds
+        the markdown style table.
         :param poo_type:
         :return:
         """
@@ -260,10 +284,56 @@ class DocumentGeneratorCoentunnel:
         return data_dict
 
     @staticmethod
-    def build_poo_table(input_data_dict: dict) -> str:
+    def build_poo_table_md(input_data_dict: dict) -> str:
+        """
+        Build a poo data table in a markdown style.
+        :param input_data_dict:
+        :return:
+        """
         text = """|Probleem|Beschrijving|Aantal|Totaal|Gemiddelde|
                   |--------|------------|------|------|----------|""" + ''.join((input_data_dict[code] for code in input_data_dict.keys()))
         return text
+
+    def get_poo_table_data_v2(self, poo_type: str) -> dict:
+        """
+        Retrieves/collects the data for the poo table in a way that is compatible wit the module that builds
+        the docx style table.
+        :param poo_type:
+        :return:
+        """
+        # todo: build a module to update the meta with the staging file poo data. this action gets easier when only
+        #  needing to acces poo_from_meta
+        poo_type_string = self.sa.metadata.return_poo_type_string(poo_type)
+
+        poo_type_count = self.sa.meldingen[poo_type_string].value_counts(dropna=False).to_dict()
+
+        meta_poo_type = self.sa.metadata.poo_data()[poo_type_string.split(' ')[0]]
+
+        poo_type_avg_table = self.sa.metadata.poo_avg_table(poo_dictionary=meta_poo_type, poo_type=poo_type)
+
+        poo_beschrijvingen = self.sa.metadata.contract_info()['POO_codes']
+
+        data_dict = {"poo_type": poo_type_string.title(),
+                     "rows": []}
+
+        for code in self.sa.metadata.return_poo_code_list(poo_type):
+            code_counts = list()
+
+            for quarter in meta_poo_type.keys():
+                if code in meta_poo_type[quarter].keys():
+                    code_counts.append(self.sa.metadata.sum_values(dictionary=meta_poo_type[quarter], keys=[code]))
+                else:
+                    code_counts.append(0)
+
+            aantal_count = poo_type_count[code] if code in poo_type_count.keys() else 0
+            totaal = sum(code_counts) + aantal_count
+            data_dict["rows"].append((code, poo_beschrijvingen[code], aantal_count, totaal, poo_type_avg_table[code]))
+
+        return data_dict
+
+    def build_poo_type_table(self, input_data: dict, docx_object: docx.Document) -> None:
+        headers = (input_data["poo_type"], "Beschrijving", "Aantal", "Totaal", "Gemiddelde")
+        self.build_table_docx(docx_object=docx_object, headers=headers, row_data=input_data["rows"])
 
     def get_aantal_per_subsysteem_per_maand(self, threshold: int, ntype: str = 'storingen') -> dict:
         """
@@ -352,6 +422,47 @@ class DocumentGeneratorCoentunnel:
                   |---------------|-----|------|""" + ''.join((line for line in input_dict['lines']))
         return text
 
+    def get_asset_meeste_ntype_algemeen_v2(self, threshold: int, ntype: str = 'meldingen') -> dict:
+        staging_file_ntype = self.sa.return_ntype_staging_file_object(ntype=ntype)
+
+        ntype_per_asset = staging_file_ntype['asset nummer'].value_counts()
+        ntype_per_asset = ntype_per_asset.reset_index()
+        ntype_per_asset.rename(columns={"asset nummer": "count", "index": "asset nummer"}, inplace=True)
+
+        list_descriptions = {staging_file_ntype['asset nummer'][index]: staging_file_ntype['asset beschrijving'][index]
+                             for index in range(staging_file_ntype.shape[0])}
+
+        # asset beschrijving ophalen van de asset nummers om op een latere regel toe te voegen aan df ntype_per_asset
+        asset_beschrijvingen = []
+        for index, row in ntype_per_asset.iterrows():
+            asset_num = row[0]
+            if asset_num in list_descriptions.keys():
+                asset_beschrijvingen.append(list_descriptions[asset_num])
+
+        # print(f'\nasset beschrijving = {asset_beschrijvingen}\n')
+
+        ntype_per_asset.at[:, 'asset beschrijving'] = asset_beschrijvingen
+
+        # ophalen van de sbs nummers van de assets
+        sbs_dict = dict()
+        for asset_num in ntype_per_asset.loc[:, 'asset nummer'].to_dict().values():
+            row = staging_file_ntype[staging_file_ntype.loc[:, 'asset nummer'] == asset_num]
+            sbs_dict[asset_num] = row['sbs'].unique()[0]
+
+        # bouwen van de lijst met regels data dide gepresenteerd moeten worden
+        data_dict = {"threshold": threshold,
+                     "rows": []}
+        lines2handle = ntype_per_asset[ntype_per_asset['count'] >= threshold]
+        for r in lines2handle.iterrows():
+            row = r[1]
+            data_dict["rows"].append((self.sa._get_breakdown_description(sbs_dict[row[0]]), row[-1], row[1]))
+
+        return data_dict
+
+    def build_asset_meeste_ntype_algemeen_v2(self, input_dict: dict, docx_object: docx.Document) -> None:
+        headers = ("Deelinstallatie", "Asset", "Aantal")
+        self.build_table_docx(docx_object=docx_object, headers=headers, row_data=input_dict['rows'])
+
     def get_asset_uitwerking_ntypes(self, threshold: int, ntype: str = 'meldingen') -> dict:
         staging_file_ntype = self.sa.return_ntype_staging_file_object(ntype=ntype)
 
@@ -384,10 +495,55 @@ class DocumentGeneratorCoentunnel:
         for asset in list(input_dict['ntype_per_asset'].index):
             df = staging_file_ntype[staging_file_ntype["asset nummer"] == asset].copy().reset_index()
             line = f"""De {len(df)} meldingen van {df.loc[0, 'asset beschrijving']} worden hieronder gepresenteerd.
-                       {self.newline}{df.loc[:, columns2present]}{self.newline}"""
+                       {self.newline}{df.loc[:, columns2present].to_html()}{self.newline}"""
             text = text + self.newline + line
 
         return text
+
+    def build_asset_uitwerking_ntypes_v2(self, input_dict: dict, docx_paragraph_object, docx_object: docx.Document) -> None:
+        """
+        de v2 modules combineren het opstellen van de data met het schrijven naar het docx_object
+        :param input_dict:
+        :param docx_object:
+        :return:
+        """
+        staging_file_ntype = self.sa.return_ntype_staging_file_object(ntype=input_dict['ntype'])
+        text = f"""{self.newline}De assets met {input_dict['threshold']} of meer meldingen zijn hieronder uitgewerkt: 
+
+        Bij de {input_dict['ntype_per_asset']} meldingen is geen asset gekoppeld aan de werkorder.
+        {self.newline}
+        """
+
+        docx_paragraph_object.add_run(text)
+
+        columns2present = ['werkorder', 'status', 'rapport datum', 'werkorder beschrijving', 'sbs',
+                           'sbs omschrijving', 'locatie', 'locatie omschrijving', 'probleem code',
+                           'beschrijving probleem', 'oorzaak code', 'beschrijving oorzaak',
+                           'oplossing code', 'beschrijving oplossing', 'uitgevoerde werkzaamheden',
+                           'type melding (Storing/Incident/Preventief/Onterecht)']
+
+        for asset in list(input_dict['ntype_per_asset'].index):
+            df = staging_file_ntype[staging_file_ntype["asset nummer"] == asset].copy().reset_index()
+            line = f"""De {len(df)} meldingen van {df.loc[0, 'asset beschrijving']} worden hieronder gepresenteerd.
+                       {self.newline}"""
+            docx_paragraph_object.add_run(line)
+
+            df = df.loc[:, columns2present]
+
+            # add a table to the end and create a reference variable
+            # extra row is so we can add the header row
+            t = docx_object.add_table(df.shape[0] + 1, df.shape[1])
+
+            # add the header rows.
+            for j in range(df.shape[-1]):
+                t.cell(0, j).text = df.columns[j]
+
+            # add the rest of the data frame
+            for i in range(df.shape[0]):
+                for j in range(df.shape[-1]):
+                    t.cell(i + 1, j).text = str(df.values[i, j])
+
+            docx_object.save(self._default_export_file_name)
 
     @staticmethod
     def build_asset_conclusie(input_dict: dict) -> str:
@@ -404,14 +560,11 @@ class DocumentGeneratorCoentunnel:
         """
         return text
 
-    def del_old_export(self):
-        if self._default_export_file_name in os.listdir(os.curdir):
-            print('Deleting old file')
-            os.remove(self._default_export_file_name)
-        else:
-            pass
-
+    """
+    Full document builders - Modules that are responsible 
+    """
     def build_full_document(self, threshold: int = 3):
+        # todo: aanpassen zodat de bold koppen level 3 koppen worden
         self.del_old_export()
         print('Creating file ' + self._default_export_file_name)
 
@@ -447,21 +600,44 @@ class DocumentGeneratorCoentunnel:
         doc.add_heading("Conclusie/Aanbeveling", level=1)
         doc.add_heading("Algemeen", level=2)
 
+        # conclusie_algemeen = doc.add_paragraph("")
+        # conclusie_algemeen.add_run(self.build_conclusie_algemeen_intro())
+        # conclusie_algemeen.add_run("\n")
+        # conclusie_algemeen.add_run("Probleem").bold = True
+        # conclusie_algemeen.add_run("\n")
+        # # conclusie_algemeen.add_run(self.build_poo_table_md(self.get_poo_table_data_md('probleem')))
+        #
+        # conclusie_algemeen.add_run("\n")
+        # conclusie_algemeen.add_run(self.newline)
+        # doc.save(self._default_export_file_name)
+        #
+        # conclusie_algemeen.add_run("Oorzaak").bold = True
+        # conclusie_algemeen.add_run("\n")
+        # # conclusie_algemeen.add_run(self.build_poo_table_md(self.get_poo_table_data_md('oorzaak')))
+        #
+        # conclusie_algemeen.add_run("\n")
+        # conclusie_algemeen.add_run("Oplossing").bold = True
+        # conclusie_algemeen.add_run("\n")
+        # # conclusie_algemeen.add_run(self.build_poo_table_md(self.get_poo_table_data_md('oplossing')))
+        #
+        # doc.save(self._default_export_file_name)
+
         conclusie_algemeen = doc.add_paragraph("")
         conclusie_algemeen.add_run(self.build_conclusie_algemeen_intro())
-        conclusie_algemeen.add_run("\n")
-        conclusie_algemeen.add_run("Probleem").bold = True
-        conclusie_algemeen.add_run("\n")
-        conclusie_algemeen.add_run(self.build_poo_table(self.get_poo_table_data('probleem')))
-        conclusie_algemeen.add_run("\n")
-        conclusie_algemeen.add_run("Oorzaak").bold = True
-        conclusie_algemeen.add_run("\n")
-        conclusie_algemeen.add_run(self.build_poo_table(self.get_poo_table_data('oorzaak')))
-        conclusie_algemeen.add_run("\n")
-        conclusie_algemeen.add_run("Oplossing").bold = True
-        conclusie_algemeen.add_run("\n")
-        conclusie_algemeen.add_run(self.build_poo_table(self.get_poo_table_data('oplossing')))
+        conclusie_algemeen.add_run(self.newline)
+        conclusie_algemeen.add_run(self.newline)
         doc.save(self._default_export_file_name)
+        doc.add_heading("Probleem", level=2)
+        self.build_poo_type_table(input_data=self.get_poo_table_data_v2(poo_type='probleem'),
+                                  docx_object=doc)
+
+        doc.add_heading("Oorzaak", level=2)
+        self.build_poo_type_table(input_data=self.get_poo_table_data_v2(poo_type='oorzaak'),
+                                  docx_object=doc)
+
+        doc.add_heading("Oplossing", level=2)
+        self.build_poo_type_table(input_data=self.get_poo_table_data_v2(poo_type='oplossing'),
+                                  docx_object=doc)
 
         doc.add_heading("Storingen per deelinstallatie", level=2)
 
@@ -474,12 +650,19 @@ class DocumentGeneratorCoentunnel:
 
         asset_algemeen = doc.add_paragraph("")
         asset_algemeen.add_run("Assets met de meeste meldingen").bold = True
-        asset_algemeen.add_run(self.build_asset_meeste_ntype_algemeen(self.get_asset_meeste_ntype_algemeen(threshold=threshold)))
+        self.build_asset_meeste_ntype_algemeen_v2(self.get_asset_meeste_ntype_algemeen_v2(threshold=threshold),
+                                                  docx_object=doc)
         doc.save(self._default_export_file_name)
 
         asset_uitwerking = doc.add_paragraph("")
         asset_uitwerking.add_run("Uitwerking meldingen").bold = True
-        asset_uitwerking.add_run(self.build_asset_uitwerking_ntypes(self.get_asset_uitwerking_ntypes(threshold=threshold)))
+        asset_uitwerking.add_run(self.build_asset_uitwerking_ntypes(self.get_asset_uitwerking_ntypes(threshold=threshold)))\
+
+        # Geen optimale manier van toevoegen df aan docx
+        # self.build_asset_uitwerking_ntypes_v2(self.get_asset_uitwerking_ntypes(threshold=threshold),
+        #                                       docx_paragraph_object=asset_uitwerking,
+        #                                       docx_object=doc)
+
         doc.save(self._default_export_file_name)
 
         asset_conclusie = doc.add_paragraph("")
@@ -491,10 +674,10 @@ class DocumentGeneratorCoentunnel:
 
     def build_appendix(self, threshold: int = 0):
         print('Creating file ' + self._default_export_file_name_appendix)
-
+        title = 'title'
         #
         # Aantal meldingen per deelinstallatie
-        #
+        #1
         df = self.sa.return_ntype_staging_file_object(ntype='meldingen')
         time_range = [min(df['rapport datum']), max(df['rapport datum'])]
         available_categories = self.sa.metadata.contract_info()['aanwezige_deelinstallaties']
@@ -504,12 +687,13 @@ class DocumentGeneratorCoentunnel:
 
         readable_labels = [self.sa.prettify_time_label(label) for label in self.sa.last_seen_bin_names]
         self.sa.plot(input_data=prepped_data, plot_type='stacked',
-                     category_labels=categories, bin_labels=readable_labels)
+                     category_labels=categories, bin_labels=readable_labels, title=title)
 
         summary_data = self.sa.prep_summary(df, time_range, available_categories, time_key='rapport datum',
                                             category_key='sbs')
         self.sa.plot_summary(x_labels=[self.sa.prettify_time_label(label) for label in summary_data.keys()],
-                             data=list(summary_data.values()))
+                             data=list(summary_data.values()),
+                             title=title)
 
         #
         # Aantal storingen per deelinstallatie
@@ -522,12 +706,14 @@ class DocumentGeneratorCoentunnel:
         # needed to cover 'nan', else ValueError: shape mismatch: objects cannot be broadcast to a single shape
         readable_labels = [self.sa.prettify_time_label(label) for label in self.sa.last_seen_bin_names]
         self.sa.plot(input_data=prepped_data, plot_type='stacked',
-                     category_labels=categories, bin_labels=readable_labels)
+                     category_labels=categories, bin_labels=readable_labels,
+                     title=title)
 
         summary_data = self.sa.prep_summary(df, time_range, available_categories, time_key='rapport datum',
                                             category_key='sbs')
         self.sa.plot_summary(x_labels=[self.sa.prettify_time_label(label) for label in summary_data.keys()],
-                             data=list(summary_data.values()))
+                             data=list(summary_data.values()),
+                             title=title)
 
         #
         # Aantal onterechte meldingen per deelinstallatie
@@ -540,12 +726,14 @@ class DocumentGeneratorCoentunnel:
         readable_labels = [self.sa.prettify_time_label(label) for label in self.sa.last_seen_bin_names]
 
         self.sa.plot(input_data=prepped_data, plot_type='stacked',
-                     category_labels=categories, bin_labels=readable_labels)
+                     category_labels=categories, bin_labels=readable_labels,
+                     title=title)
 
         summary_data = self.sa.prep_summary(df, time_range, available_categories, time_key='rapport datum',
                                             category_key='sbs')
         self.sa.plot_summary(x_labels=[self.sa.prettify_time_label(label) for label in summary_data.keys()],
-                             data=list(summary_data.values()))
+                             data=list(summary_data.values()),
+                             title=title)
 
         #
         # Totaal aantal meldingen preventief per deelinstallatie
@@ -558,12 +746,14 @@ class DocumentGeneratorCoentunnel:
         readable_labels = [self.sa.prettify_time_label(label) for label in self.sa.last_seen_bin_names]
 
         self.sa.plot(input_data=prepped_data, plot_type='stacked',
-                     category_labels=categories, bin_labels=readable_labels)
+                     category_labels=categories, bin_labels=readable_labels,
+                     title=title)
 
         summary_data = self.sa.prep_summary(df, time_range, available_categories, time_key='rapport datum',
                                             category_key='sbs')
         self.sa.plot_summary(x_labels=[self.sa.prettify_time_label(label) for label in summary_data.keys()],
-                             data=list(summary_data.values()))
+                             data=list(summary_data.values()),
+                             title=title)
 
         #
         # Aantal incidenten per deelinstallatie
@@ -571,17 +761,19 @@ class DocumentGeneratorCoentunnel:
         df = self.sa.return_ntype_staging_file_object(ntype='incident')
 
         categories, prepped_data = self.sa.test_prep(df, time_range, available_categories,
-                                                time_key='rapport datum', category_key='sbs')
+                                                     time_key='rapport datum', category_key='sbs')
 
         readable_labels = [self.sa.prettify_time_label(label) for label in self.sa.last_seen_bin_names]
 
         self.sa.plot(input_data=prepped_data, plot_type='stacked',
-                     category_labels=categories, bin_labels=readable_labels)
+                     category_labels=categories, bin_labels=readable_labels,
+                     title=title)
 
         summary_data = self.sa.prep_summary(df, time_range, available_categories, time_key='rapport datum',
                                             category_key='sbs')
         self.sa.plot_summary(x_labels=[self.sa.prettify_time_label(label) for label in summary_data.keys()],
-                             data=list(summary_data.values()))
+                             data=list(summary_data.values()),
+                             title=title)
 
         # todo: tijden dynamisch maken
         # Vergelijking voorgaande kwartaal met huidinge kwartaal
@@ -598,7 +790,8 @@ class DocumentGeneratorCoentunnel:
         self.sa.plot(input_data=prepped_data,
                      plot_type='side-by-side',
                      category_labels=categories,
-                     bin_labels=self.sa.last_seen_bin_names)
+                     bin_labels=self.sa.last_seen_bin_names,
+                     title=title)
 
         summary_data = self.sa.prep_summary(self.sa.metadata.unsaved_updated_meta['meldingen'],
                                             time_range=['10-2020', '03-2021'],
@@ -606,7 +799,8 @@ class DocumentGeneratorCoentunnel:
                                             bin_size='quarter')
 
         self.sa.plot_summary(x_labels=[self.sa.prettify_time_label(label) for label in summary_data.keys()],
-                             data=list(summary_data.values()))
+                             data=list(summary_data.values()),
+                             title=title)
 
         #
         # Storingen
@@ -621,7 +815,8 @@ class DocumentGeneratorCoentunnel:
         self.sa.plot(input_data=prepped_data,
                      plot_type='side-by-side',
                      category_labels=categories,
-                     bin_labels=self.sa.last_seen_bin_names)
+                     bin_labels=self.sa.last_seen_bin_names,
+                     title=title)
 
         summary_data = self.sa.prep_summary(self.sa.metadata.unsaved_updated_meta['storingen'],
                                             time_range=['10-2020', '03-2021'],
@@ -629,7 +824,8 @@ class DocumentGeneratorCoentunnel:
                                             bin_size='quarter')
 
         self.sa.plot_summary(x_labels=[self.sa.prettify_time_label(label) for label in summary_data.keys()],
-                             data=list(summary_data.values()))
+                             data=list(summary_data.values()),
+                             title=title)
 
         #
         # Verdeling type meldingen per deelinstallatie
@@ -655,7 +851,8 @@ class DocumentGeneratorCoentunnel:
             self.sa.plot(input_data=prepped_data,
                          plot_type='stacked',
                          category_labels=categories,
-                         bin_labels=[self.sa.prettify_time_label(label) for label in self.sa.last_seen_bin_names])
+                         bin_labels=[self.sa.prettify_time_label(label) for label in self.sa.last_seen_bin_names],
+                         title=title)
 
             summary_data = self.sa.prep_summary(df_groupby_sbs.get_group(di_num),
                                                 time_range=['10-2020', '03-2021'],
@@ -664,7 +861,8 @@ class DocumentGeneratorCoentunnel:
                                                 category_key='type melding (Storing/Incident/Preventief/Onterecht)')
 
             self.sa.plot_summary(x_labels=[self.sa.prettify_time_label(label) for label in summary_data.keys()],
-                                 data=list(summary_data.values()))
+                                 data=list(summary_data.values()),
+                                 title=title)
 
         #
         # Exporting appendix
