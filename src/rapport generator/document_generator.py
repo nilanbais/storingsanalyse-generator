@@ -516,34 +516,18 @@ class DocumentGeneratorCoentunnel:
 
         docx_paragraph_object.add_run(text)
 
-        columns2present = ['werkorder', 'status', 'rapport datum', 'werkorder beschrijving', 'sbs',
-                           'sbs omschrijving', 'locatie', 'locatie omschrijving', 'probleem code',
-                           'beschrijving probleem', 'oorzaak code', 'beschrijving oorzaak',
-                           'oplossing code', 'beschrijving oplossing', 'uitgevoerde werkzaamheden',
-                           'type melding (Storing/Incident/Preventief/Onterecht)']
+        columns2present = ['werkorder', 'rapport datum', 'type melding (Storing/Incident/Preventief/Onterecht)',
+                           'werkorder beschrijving', 'probleem code', 'beschrijving probleem', 'oorzaak code',
+                           'beschrijving oorzaak', 'oplossing code', 'beschrijving oplossing',
+                           'uitgevoerde werkzaamheden']
 
-        for asset in list(input_dict['ntype_per_asset'].index):
-            df = staging_file_ntype[staging_file_ntype["asset nummer"] == asset].copy().reset_index()
-            line = f"""De {len(df)} meldingen van {df.loc[0, 'asset beschrijving']} worden hieronder gepresenteerd.
-                       {self.newline}"""
-            docx_paragraph_object.add_run(line)
-
-            df = df.loc[:, columns2present]
-
-            # add a table to the end and create a reference variable
-            # extra row is so we can add the header row
-            t = docx_object.add_table(df.shape[0] + 1, df.shape[1])
-
-            # add the header rows.
-            for j in range(df.shape[-1]):
-                t.cell(0, j).text = df.columns[j]
-
-            # add the rest of the data frame
-            for i in range(df.shape[0]):
-                for j in range(df.shape[-1]):
-                    t.cell(i + 1, j).text = str(df.values[i, j])
-
-            docx_object.save(self._default_export_file_name)
+        # todo: columns2present in een tabel toevoegen in een opstelling als onderstaand. volgorde van boven naar
+        #  beneden zoals in columns2present index 0 tot eind
+        """
+        tabel lay-out
+        kolom naam | waarde uit df
+        kolom naam | waarde uit df
+        """
 
     @staticmethod
     def build_asset_conclusie(input_dict: dict) -> str:
@@ -627,6 +611,7 @@ class DocumentGeneratorCoentunnel:
         conclusie_algemeen.add_run(self.newline)
         conclusie_algemeen.add_run(self.newline)
         doc.save(self._default_export_file_name)
+
         doc.add_heading("Probleem", level=2)
         self.build_poo_type_table(input_data=self.get_poo_table_data_v2(poo_type='probleem'),
                                   docx_object=doc)
@@ -656,7 +641,9 @@ class DocumentGeneratorCoentunnel:
 
         asset_uitwerking = doc.add_paragraph("")
         asset_uitwerking.add_run("Uitwerking meldingen").bold = True
-        asset_uitwerking.add_run(self.build_asset_uitwerking_ntypes(self.get_asset_uitwerking_ntypes(threshold=threshold)))\
+        # todo: alleen de omschrijvende/beschrijvende kolommen presenteren. per werkorder de verschillende data
+        #  onder elkaar presenteren, per werkorder een tabel
+        asset_uitwerking.add_run(self.build_asset_uitwerking_ntypes(self.get_asset_uitwerking_ntypes(threshold=threshold)))
 
         # Geen optimale manier van toevoegen df aan docx
         # self.build_asset_uitwerking_ntypes_v2(self.get_asset_uitwerking_ntypes(threshold=threshold),
