@@ -57,8 +57,9 @@ class DocumentGeneratorCoentunnel:
 
         return data_dict
 
-    def build_table_docx(self, docx_object: docx.Document, headers: Tuple, row_data: Iterable[Union[str, str, str]]) -> None:
+    def build_table_docx(self, docx_object: docx.Document, headers: Tuple, row_data: Iterable[str]) -> None:
         table = docx_object.add_table(1, cols=len(headers))
+        table.style = docx_object.styles['Light Grid']
         # Adding headers
         row = table.rows[0].cells
         for i in range(len(headers)):
@@ -504,14 +505,14 @@ class DocumentGeneratorCoentunnel:
         """
         de v2 modules combineren het opstellen van de data met het schrijven naar het docx_object
         :param input_dict:
+        :param docx_paragraph_object: type = docx.text.paragraph.Paragraph maar 'text' wordt niet herkend
         :param docx_object:
         :return:
         """
         staging_file_ntype = self.sa.return_ntype_staging_file_object(ntype=input_dict['ntype'])
         text = f"""{self.newline}De assets met {input_dict['threshold']} of meer meldingen zijn hieronder uitgewerkt: 
 
-        Bij de {input_dict['ntype_per_asset']} meldingen is geen asset gekoppeld aan de werkorder.
-        {self.newline}
+        Bij {sum(input_dict['ntype_per_asset'].to_dict().values())} meldingen is geen asset gekoppeld aan de werkorder.{self.newline}
         """
 
         docx_paragraph_object.add_run(text)
@@ -521,13 +522,24 @@ class DocumentGeneratorCoentunnel:
                            'beschrijving oorzaak', 'oplossing code', 'beschrijving oplossing',
                            'uitgevoerde werkzaamheden']
 
-        # todo: columns2present in een tabel toevoegen in een opstelling als onderstaand. volgorde van boven naar
-        #  beneden zoals in columns2present index 0 tot eind
-        """
-        tabel lay-out
-        kolom naam | waarde uit df
-        kolom naam | waarde uit df
-        """
+        for asset in list(input_dict['ntype_per_asset'].index):
+            df = staging_file_ntype[staging_file_ntype["asset nummer"] == asset].copy().reset_index()
+            docx_object.add_heading('Asset: ' + str(df.loc[0, 'asset beschrijving']), level=3)
+
+            # Onderstaande tekst komt niet op de plaats waar deze moet komen
+            # misschien optie om in deze functie een paragraph te maken per asset dat behandeld moet worden.
+            # todo: bovenstaande
+            line = f"""De {len(df)} meldingen van {df.loc[0, 'asset beschrijving']} worden hieronder gepresenteerd.{self.newline}"""
+            docx_paragraph_object.add_run(line)
+            docx_object.save(self._default_export_file_name)
+
+            all_table_data = [[(str(column_name), str(df.at[idx, column_name])) for column_name in columns2present] for idx in range(len(df))]
+            for table_data in all_table_data:
+                docx_object.add_heading('', level=4)  # Hack om verschillende kolommen toe te kunnen voegen
+                self.build_table_docx(docx_object=docx_object, headers=('Kolom', 'Waarde'), row_data=table_data)
+                # Above warning: Expected type 'Iterable[str]', got 'List[Tuple[str, str]]' instead. Can be ignored
+                # docx_paragraph_object.add_run(f"""{self.newline}""")
+            docx_object.save(self._default_export_file_name)
 
     @staticmethod
     def build_asset_conclusie(input_dict: dict) -> str:
@@ -632,28 +644,30 @@ class DocumentGeneratorCoentunnel:
         doc.save(self._default_export_file_name)
 
         doc.add_heading("Assets met de meeste meldingen", level=1)
+        doc.add_heading("Algemeen", level=2)
 
-        asset_algemeen = doc.add_paragraph("")
-        asset_algemeen.add_run("Assets met de meeste meldingen").bold = True
         self.build_asset_meeste_ntype_algemeen_v2(self.get_asset_meeste_ntype_algemeen_v2(threshold=threshold),
                                                   docx_object=doc)
         doc.save(self._default_export_file_name)
 
-        asset_uitwerking = doc.add_paragraph("")
-        asset_uitwerking.add_run("Uitwerking meldingen").bold = True
-        # todo: alleen de omschrijvende/beschrijvende kolommen presenteren. per werkorder de verschillende data
-        #  onder elkaar presenteren, per werkorder een tabel
-        asset_uitwerking.add_run(self.build_asset_uitwerking_ntypes(self.get_asset_uitwerking_ntypes(threshold=threshold)))
+        doc.add_heading("Uitwerking meldingen", level=2)
 
-        # Geen optimale manier van toevoegen df aan docx
-        # self.build_asset_uitwerking_ntypes_v2(self.get_asset_uitwerking_ntypes(threshold=threshold),
-        #                                       docx_paragraph_object=asset_uitwerking,
-        #                                       docx_object=doc)
+        asset_uitwerking = doc.add_paragraph("")
+        # asset_uitwerking.add_run(self.build_asset_uitwerking_ntypes(self.get_asset_uitwerking_ntypes(threshold=threshold)))
+
+        self.build_asset_uitwerking_ntypes_v2(self.get_asset_uitwerking_ntypes(threshold=threshold),
+                                              docx_paragraph_object=asset_uitwerking,
+                                              docx_object=doc)
 
         doc.save(self._default_export_file_name)
 
+        doc.add_heading("Conclusie", level=2)
+
         asset_conclusie = doc.add_paragraph("")
-        asset_conclusie.add_run("Conclusie").bold = True
+        # asset_conclusie.add_run("Conclusie").bold = True
+        # conclusie_algemeen.add_run(self.newline)
+        # conclusie_algemeen.add_run(self.newline)
+        # doc.save(self._default_export_file_name)
         asset_conclusie.add_run(self.build_asset_conclusie(self.get_asset_meeste_ntype_algemeen(threshold=threshold)))
         doc.save(self._default_export_file_name)
 
@@ -747,8 +761,8 @@ class DocumentGeneratorCoentunnel:
         #
         df = self.sa.return_ntype_staging_file_object(ntype='incident')
 
-        categories, prepped_data = self.sa.test_prep(df, time_range, available_categories,
-                                                     time_key='rapport datum', category_key='sbs')
+        categories, prepped_data = self.sa.prep(df, time_range, available_categories,
+                                                time_key='rapport datum', category_key='sbs')
 
         readable_labels = [self.sa.prettify_time_label(label) for label in self.sa.last_seen_bin_names]
 
