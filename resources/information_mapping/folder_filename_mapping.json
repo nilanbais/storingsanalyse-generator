@@ -1,0 +1,16 @@
+{
+	"__comment": "all folders are relative from the project repo root",
+	"maximo_response_data_folder": "data/raw_database_data",
+	"maximo_response_data_filename": "maximo_response_data.json",
+	"information_mapping_folder": "resources/information_mapping",
+	"_ld_map_filename": "location_description_map.json",
+	"staging_file_folder": "data/staging_file",
+	"metadata_folder": "data/metadata",
+	"metadata_filename": {
+		"Coentunnel-tracé": "metadata_file_coentunnel-tracé.json",
+		"Sluis Eefde": "metadata_file_sluis_eefde.json"
+	},
+	"generated_files_folder": "documents/generated_documents",
+	"export_filenme_text": "storingsanalyse_tekst.docx",
+	"export_filename_appendix": "storingsanalyse_bijlage.pdf"
+}
