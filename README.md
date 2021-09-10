@@ -10,60 +10,45 @@ To grant the ability to analyse historical data of a given project, a new object
 build as presented bellow.
 ```
 {
-    "project": projectnaam,
-    "start_datum": f"{maand}_{jaar}",
-    "contract_info": {
-        "tijdsregistratie": True,
-        ...,
-        "aanwezige_deelinstallaties": [lijst met aanwezige deelinstallaties op het project]
+    project: projectnaam,
+    start_datum: dd-mm-yyy,
+    contract_info: {
+        tijdsregistratie: True,
+        ...
+        aanwezige_deelinstallaties: [Lijst DI_nummers],
+        POO_codes: [Lijst POO codes]
     },
-    "poo_codes": {
-        "probleem": {
-            f"{maand}_{jaar}": {
-                code: aantal meldingen,
-                ...,
-                "Leeg": aantal meldingen
-            },
-            f"{maand}_{jaar}": {
-                ...
-            },
+    poo_codes: {
+        probleem: {
+            "{kwartaal}_{jaar}": {
+                POO_code: aantal meldingen,
+                POO_code: aantal meldingen,
+            }
         },
-        "oorzaak": {
-            f"{maand}_{jaar}": {
-                code: aantal meldingen,
-                ...,
-                "Leeg": aantal meldingen
-            },
-            f"{maand}_{jaar}": {
-                ...
-            },
+        oorzaak: {
+                [structuur als in probleem]
+            }
         },
-        "oplossing": {
-            f"{maand}_{jaar}": {
-                code: aantal meldingen,
-                ...,
-                "Leeg": aantal meldingen
-            },
-            f"{maand}_{jaar}": {
-                ...
-            },
-        },
+        oplossing: {
+                [structuur als in probleem]
+            }
+        }
     },
-    "meldingen": {
-        f"{maand}_{jaar}": {
+    meldingen: {
+        "{maand}_{jaar}": {
             DI_num: aantal meldingen,
             DI_num: aantal meldingen
         }
-        f"{maand}_{jaar}": {
+        "{maand}_{jaar}": {
             ...
         }
     },
-    "storingen": {
-        f"{maand}_{jaar}": {
+    storingen: {
+        "{maand}_{jaar}": {
             DI_num: aantal storingen,
             DI_num: aantal storingen
         }
-        f"{maand}_{jaar}": {
+        "{maand}_{jaar}": {
             ...
         }
     }
@@ -81,6 +66,7 @@ The backend is build using different Python classes, all dedicated to fulfill a 
 |PrepNPlot|Python Class used for the preparation and plotting of the project specific data.|
 |StagingFileBuilder|Python Class focussed on builing and saving a staging file in which the maintenance engineers can specify the category to which a notification belongs.|
 |StoringsAnalyse|Python Class that combines the functionalities of the other classes that need to be applied and makes them available in the User Interface (Jupyter Notebook).|
+|DocumentGenerator|Pyhon Class for generating the documentens (text + appendix).|
 
 ---
 # Class QueryMaximoDatabase
@@ -97,7 +83,7 @@ qmdb = QueryMaximoDatabase(api_key)
 ## Class variables
 A class variable is a variable defined inside a class. When making a new instance of this class, this new instance will also contain this variable.
 
-- **_default_file_name** - The file name is build up like: date_hours_minutes_query_response_data.json, where date, hours, and minutes are substituted with the date and time of the moment the variable is used.
+This class doesn't contain any class variables.
 
 ## Class attributes
 
@@ -129,13 +115,13 @@ Functionality of the *qmdb*.get_response(), but extended with the isolation of t
 - **filename** - A string to specify a filename when saving the data (default=_default_file_name).
 - **query** - A string containing the query that needs to be send to the database (default = None).
 ---
-### *qmdb*._set_site_id(site_id) - *protected module*
+### *qmdb*.set_site_id(site_id) - *protected module*
 Protected module to create the possibility of setting the site id class attribute after initializing the class-instance. It returns nothing.
 
 #### Parameters
 - **site_id** - The site_id you want to set as *qmdb*.site_id.
 ---
-### *qmdb*._set_object_structure(object_structure='MXWO_SND')
+### *qmdb*.set_object_structure(object_structure='MXWO_SND')
 Protected module to create the possibility of setting the object structure class attribute after initializing the class-instance. It returns nothing.
 
 This module is executed at initialization of the class instance to set the default value as the object structure.
