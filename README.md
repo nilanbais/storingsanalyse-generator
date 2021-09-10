@@ -10,60 +10,45 @@ To grant the ability to analyse historical data of a given project, a new object
 build as presented bellow.
 ```
 {
-    "project": projectnaam,
-    "start_datum": f"{maand}_{jaar}",
-    "contract_info": {
-        "tijdsregistratie": True,
-        ...,
-        "aanwezige_deelinstallaties": [lijst met aanwezige deelinstallaties op het project]
+    project: projectnaam,
+    start_datum: dd-mm-yyy,
+    contract_info: {
+        tijdsregistratie: True,
+        ...
+        aanwezige_deelinstallaties: [Lijst DI_nummers],
+        POO_codes: [Lijst POO codes]
     },
-    "poo_codes": {
-        "probleem": {
-            f"{maand}_{jaar}": {
-                code: aantal meldingen,
-                ...,
-                "Leeg": aantal meldingen
-            },
-            f"{maand}_{jaar}": {
-                ...
-            },
+    poo_codes: {
+        probleem: {
+            "{kwartaal}_{jaar}": {
+                POO_code: aantal meldingen,
+                POO_code: aantal meldingen,
+            }
         },
-        "oorzaak": {
-            f"{maand}_{jaar}": {
-                code: aantal meldingen,
-                ...,
-                "Leeg": aantal meldingen
-            },
-            f"{maand}_{jaar}": {
-                ...
-            },
+        oorzaak: {
+                [structuur als in probleem]
+            }
         },
-        "oplossing": {
-            f"{maand}_{jaar}": {
-                code: aantal meldingen,
-                ...,
-                "Leeg": aantal meldingen
-            },
-            f"{maand}_{jaar}": {
-                ...
-            },
-        },
+        oplossing: {
+                [structuur als in probleem]
+            }
+        }
     },
-    "meldingen": {
-        f"{maand}_{jaar}": {
+    meldingen: {
+        "{maand}_{jaar}": {
             DI_num: aantal meldingen,
             DI_num: aantal meldingen
         }
-        f"{maand}_{jaar}": {
+        "{maand}_{jaar}": {
             ...
         }
     },
-    "storingen": {
-        f"{maand}_{jaar}": {
+    storingen: {
+        "{maand}_{jaar}": {
             DI_num: aantal storingen,
             DI_num: aantal storingen
         }
-        f"{maand}_{jaar}": {
+        "{maand}_{jaar}": {
             ...
         }
     }

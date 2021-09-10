@@ -56,7 +56,7 @@ Functies/Modules die geschreven moeten worden, zijn:
     -   [x] module voor het filteren van meldingen of storingen op een te kiezen di nummer
     -   [ ] module voor het updaten en opslaan van de nieuw gegenereerde metadata
 """
-# todo: bovenstaande omschrijving in documentatie bijwerken
+
 import json
 import pandas as pd
 import numpy as np
@@ -464,7 +464,7 @@ class MetadataStoringsAnalyse:
         return poo_code_list
 
     # todo: toevoegen in documentatie
-    def return_ntype_meta_object(self, ntype: str) -> DataFrame:
+    def return_ntype_meta_object(self, ntype: str) -> dict:
         if ntype.lower() in 'meldingen':
             meta_data_ntype = self.meldingen().copy()
         elif ntype.lower() in 'storingen':
