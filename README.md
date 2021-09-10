@@ -143,11 +143,14 @@ metadata = MetadataStoringsAnalyse(project)
 A class variable is a variable defined inside a class. When making a new instance of this class, this new instance will also contain this variable.
 
 - **_filepath_dict** - A dictionary with key: value pairs like {*project name*: *filename metafile of given project*}.
+- **_quarters** - A dictionary with key: value pairs like {*quarter name*: *list of corresponding months*}.
 
 ## Class attributes
 - *metadata*.filepath - The filepath of the file. Based on the project name that is parsed when initializing a class instance the filepath can be extracted.
-- *metadata*.filename - The name of the file. Set in the same process as *metadata*.filepath (set by a protected module of the class)
 - *metadata*.tijdsregistratie - Information extracted from the contract_info object in the metadata.
+- *metadata*._quarter - Internal storage for remembering the quarter of the analysis that is being executed.
+- *metadata*._year - Internal storage for remembering the year of the analysis that is being executed.
+- *metadata*.unsaved_updated_meta - space to hold the updated metadata before it is saved to longtime storage.
     
 ## Class modules
 All the module names are presented with an instance of the class named *metadata*. 
@@ -199,10 +202,31 @@ Returns the storingen object as included in the metadata object.
 {
     f"{maand}_{jaar}": {
         DI_num: aantal storingen,
-        DI_num: aantal storinge
+        DI_num: aantal storingen
     }
     f"{maand}_{jaar}": {
         ...
+    }
+}
+```
+---
+### *metadata*.poo_data()
+Returns the poo_codes object as included in the metadata object.
+```
+{
+    probleem: {
+        "{kwartaal}_{jaar}": {
+            POO_code: aantal meldingen,
+            POO_code: aantal meldingen,
+        }
+    },
+    oorzaak: {
+            [structuur als in probleem]
+        }
+    },
+    oplossing: {
+            [structuur als in probleem]
+        }
     }
 }
 ```
@@ -235,6 +259,12 @@ Returns the calculated monthly average of the values of the dictionary.
 - **dictionary** - a dictionary of which the monthly average needs to be calculated.
 - **keys** - one key, or a list of specific keys which need to be taken into account when calculating the monthly average (default = None).
 ---
+### *metadata*.avg_quarterly(dictionary)
+Returns the calculated quarterly average of the values of the dictionary.
+
+#### Parameters
+- **dictionary** - a dictionary of which the quarterly average needs to be calculated.
+---
 ### *metadata*.avg_yearly(dictionary, exclude_year=None)
 Returns the calculated yearly average of the values of the dictionary.
 
@@ -242,13 +272,89 @@ Returns the calculated yearly average of the values of the dictionary.
 - **dictionary** - a dictionary of which the monthly average needs to be calculated.
 - **exclude_year** - one year, or a list of years that need to be excluded from the calculation (default = None).
 ---
-### *metadata*.get_month_list(notification_type='meldingen', exclude_month=None, exclude_year=None)
+### *metadata*.get_month_list(notification_type='meldingen', exclude_month=None, exclude_quarter=None, exclude_year=None)
 Returns a list of all the keys of a given dictionary that do not contain the specified months or years that need to be excluded.
 
 #### Parameters
 - **notification_type** - a specification of the dictionary that needs to be filtered ('meldngen' or 'storingen', default = 'meldingen').
 - **exclude_month** - one month, or a list of months that need to be excluded (default = None).
+- **exclude_quarter** - one quarter, or a list of quarters that need to be excluded (default = None).  
 - **exclude_year** - one year, or a list of years that need to be excluded (default = None).
+---
+### *metadata*.filter_dictionary_keys(dictionary, keys)
+Returns a dict filtered to only contain the specified keys.
+
+#### Parameters
+- **dictionary** - the dictionary that needs to be filtered.
+- **keys** - the specified keys on which the dictionary needs to be filtered.
+---
+### *metadata*._quarter_to_month_number(quarters)
+Returns a list containing the months corresponding to the given quarters.
+
+#### Parameters
+- **quarters** - a quarter, or a list of quarters of which the corresponding months need to be returned.
+---
+### *metadata*._order_frequency_table(freq_table)
+Returns an ordered dict, ordered by the size of the values in the dictionary.
+
+#### Parameters
+- **freq_table** - the frequency_table that needs to be ordered.
+---
+### *metadata*.make_ddict_frequency_table(dictionary)
+Returns a frequency table of the values of the input dictionary.
+
+#### Parameters
+- **dictionary** - the input dictionary of which a frrequency table is made.
+---
+### *metadata*.poo_avg_table(poo_dictionary, poo_type)
+Return returns a table with the averages of the frequencies of the POO codes.
+
+#### Parameters
+- **poo_dictionary** - the full dictionary corresponding to a poo_type in the matadata object.
+- **poo_types** - one of the poo_types (probleem, oorzaak, oplossing) of which the averages table needs to be created.
+---
+### *metadata*.return_poo_type_string(poo_type)
+Returns the poo_type string 'probleem code', 'oorzaak code', or 'oplossing code' based on the poo_type.
+
+#### Parameters
+- **poo_type** - one of the poo_types (probleem, oorzaak, oplossing).
+---
+### *metadata*.return_poo_code_letter(poo_type)
+Returns the poo_type letter 'P', 'C', or 'S' based on the poo_type.
+
+#### Parameters
+- **poo_type** - one of the poo_types (probleem, oorzaak, oplossing).
+---
+### *metadata*.return_poo_code_list(poo_type)
+Returns all the available codes corresponding to a poo_type.
+
+#### Parameters
+- **poo_type** - one of the poo_types (probleem, oorzaak, oplossing).
+---
+### *metadata*.return_ntype_meta_object(ntype)
+Returns a dictionary containing only the specified notification type (ntype).
+
+#### Parameters
+- **ntype** - the notification type (available ntypes in the module are: 'meldingen' and 'storingen')
+---
+### *metadata*.update_poo_data(staging_file_data)
+Returns a dictionary that is extended with the new prepared poo data extracted from the database in the process of building the analysis.
+
+#### Parameters
+- **staging_file_data** - a pandas.DataFrame containing the prepared data for the analysis.
+---
+### *metadata*.update_ntype_data(staging_file_data, ntype)
+Returns a dictionary that is extended with the new prepared notification type data extracted from the database in the process of building the analysis.
+
+#### Parameters
+- **staging_file_data** - a pandas.DataFrame containing the prepared data for the analysis.
+- **ntype** - the notification type (available ntypes in the module are: 'meldingen' and 'storingen')
+---
+### *metadta*.update_meta(staging_file_data)
+Module that updates the poo data, meldingen and storingen, and saves the result in the attribute *metadta*.unsaved_updated_meta.
+
+#### Parameters
+- **staging_file_data** - a pandas.DataFrame containing the prepared data for the analysis.
 ---
 ---
 # Class PrepNPlot

@@ -130,7 +130,6 @@ class MetadataStoringsAnalyse:
         meta = self.get_all_data()
         return meta["storingen"][0]
 
-    # todo: toevoegen aan documentatie + de aanpassing in de objectstructuur van de metadata documenteren
     def poo_data(self) -> dict:
         meta = self.get_all_data()
         return meta["poo_codes"][0]
@@ -310,8 +309,7 @@ class MetadataStoringsAnalyse:
 
         return result_dict
 
-    # todo: documenteren
-    def avg_quarterly(self, dictionary: dict, exclude_quarter: Union[List[str], str] = None) -> float:
+    def avg_quarterly(self, dictionary: dict) -> float:
         # sort dict per quarter
         # notifications_per_quarter like: [q1_year_1, q2_year_1, ..., q4_year_n]
         # return sum() / len()
@@ -322,7 +320,6 @@ class MetadataStoringsAnalyse:
             return int(0)
         return sum(notifications_per_q) / len(notifications_per_q)
 
-    # todo: aanpassen in documentatie
     # todo: functie omschrijven zodat het werkt via => 'geeft me resultaten van maart' of 'geeft alleen Q4' (van alle jaren)
     def get_month_list(self, notification_type: str = 'melding', exclude_month: Union[List[str], str] = None, exclude_quarter: Union[List[str], str] = None, exclude_year: Union[List[str], str] = None) -> list:
         """
@@ -363,7 +360,6 @@ class MetadataStoringsAnalyse:
         return [key for key in dictionary.keys() if ((key.split('_')[0] in (_set_months or _set_quarter)) and
                                                      key.split('_')[-1] in _set_years)]
 
-    # todo: documenteren
     @staticmethod
     def filter_dictionary_keys(dictionary: dict, keys: List[str]) -> dict:
         """
@@ -377,7 +373,6 @@ class MetadataStoringsAnalyse:
         result = {key: dictionary[key] for key in dictionary.keys() if key in keys_to_return}
         return result
 
-    # todo: aanpassen in documentatie
     def _quarter_to_month_numbers(self, quarters: Union[List[str], str]) -> list:
         """
         Returns the corresponding months of the given quarters
@@ -395,12 +390,10 @@ class MetadataStoringsAnalyse:
 
         return list_to_return
 
-    # todo: aanpassen in documentatie
     @staticmethod
     def _order_frequency_table(freq_table: dict) -> dict:
         return {key: value for key, value in sorted(freq_table.items(), key=lambda item: item[1], reverse=True)}
 
-    # todo: aanpassen in documentatie
     def make_ddict_frequency_table(self, dictionary: Dict[str, dict]) -> dict:
         freq_table = {}
         for ddict in dictionary.values():
@@ -411,7 +404,6 @@ class MetadataStoringsAnalyse:
                     freq_table[key] = value
         return self._order_frequency_table(freq_table)
 
-    # todo: aanpassen in documentatie
     def poo_avg_table(self, poo_dictionary: dict, poo_type: str) -> dict:
         """
 
@@ -428,7 +420,6 @@ class MetadataStoringsAnalyse:
                 avg_table[code] = 0
         return self._order_frequency_table(avg_table)
 
-    # todo: toevoegen in documentatie
     @staticmethod
     def return_poo_type_string(poo_type: str) -> str:
         # todo: testen of het invloed heeft of de vergelijking gedaan wordt met x '==' y of x 'in' y. 'in' kan
@@ -443,7 +434,6 @@ class MetadataStoringsAnalyse:
             raise ValueError("Please parse 'probleem', 'oorzaak' or 'oplossing' as poo_type.")
         return poo_string
 
-    # todo: toevoegen in documentatie
     @staticmethod
     def return_poo_code_letter(poo_type: str) -> str:
         if poo_type.lower() == 'probleem':
@@ -456,14 +446,12 @@ class MetadataStoringsAnalyse:
             raise ValueError("Please parse 'probleem', 'oorzaak' or 'oplossing' as poo_type.")
         return code_letter
 
-    # todo: toevoegen in documentatie
     def return_poo_code_list(self, poo_type: str) -> list:
         poo_beschrijvingen = self.contract_info()['POO_codes']
         poo_code_list = [k for k in poo_beschrijvingen.keys() if self.return_poo_code_letter(poo_type) in k or k == 'Leeg']
         return poo_code_list
 
-    # todo: toevoegen in documentatie
-    def return_ntype_meta_object(self, ntype: str) -> DataFrame:
+    def return_ntype_meta_object(self, ntype: str) -> dict:
         if ntype.lower() in 'meldingen':
             meta_data_ntype = self.meldingen().copy()
         elif ntype.lower() in 'storingen':
@@ -472,7 +460,6 @@ class MetadataStoringsAnalyse:
             raise ValueError("Please parse 'meldingen' or 'storingen' as ntype.")
         return meta_data_ntype
 
-    # todo: toevoegen in documentatie
     def update_poo_data(self, staging_file_data: DataFrame) -> dict:
         poo_data_meta = self.poo_data().copy()
         for poo in poo_data_meta.keys():
@@ -492,7 +479,6 @@ class MetadataStoringsAnalyse:
 
         return poo_data_meta
 
-    # todo: toevoegen in documentatie
     def update_ntype_data(self, staging_file_data: DataFrame, ntype: str) -> dict:
         meta_ntype_data = self.return_ntype_meta_object(ntype=ntype)  # returns self.meldingen() or self.storingen()
         # todo: col_name bellow is too hard coded in script. make more abstract
@@ -514,7 +500,6 @@ class MetadataStoringsAnalyse:
         updated_meta_ntype_data = dict(**meta_ntype_data, **new_ntype_data)
         return updated_meta_ntype_data
 
-    # todo: toevoegen in documentatie
     def update_meta(self, staging_file_data: DataFrame) -> None:
         # updating poo_codes
         updated_poo_data = self.update_poo_data(staging_file_data=staging_file_data)
