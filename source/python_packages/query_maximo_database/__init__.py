@@ -8,14 +8,13 @@ import json
 from typing import Union
 
 
-# Todo: documentatie voor class aanpassen zodat duidelijk wordt wat return is of wat beïnvloed wordt
 # todo: api_get_request OSLC request maximo o.i.d.
 class QueryMaximoDatabase:
 
     def __init__(self, api_key: str) -> None:
         self.api_key = api_key
         self.object_structure = None  # set by _set_object_structure
-        self._set_object_structure()  # sets default value of object structure
+        self.set_object_structure()  # sets default value of object structure
 
         self.site_id = None
 
@@ -32,10 +31,10 @@ class QueryMaximoDatabase:
         # Set up header dictionary w/ API key according to documentation
         self.headers = {'maxauth': self.api_key}
 
-    def _set_site_id(self, site_id: str) -> None:
+    def set_site_id(self, site_id: str) -> None:
         self.site_id = site_id
 
-    def _set_object_structure(self, object_structure: str = 'MXWO_SND') -> None:
+    def set_object_structure(self, object_structure: str = 'MXWO_SND') -> None:
         self.object_structure = object_structure
 
     def _get_response(self, query: Union[str, None] = None) -> str:
