@@ -52,21 +52,6 @@ class StoringsAnalyse(PrepNPlot):
         # Metadata Parameters
         self.metadata = MetadataStoringsAnalyse(project)
 
-        # Maximo Parameters
-        self._maximo = QueryMaximoDatabase(api_key)
-        self.response_data = self._maximo.response_data  # is set by get_maximo_export, default = None
-        self.filename_saved_response_data = None
-
-        # Staging File Parameters
-        self.staging_file_name = None  # set by build_staging_file
-        self.staging_file_path = os.path.join(os.getcwd(), 'data/staging_file', staging_file_name)
-        self.staging_file_data = self.read_staging_file()
-
-        self.meldingen = None  # set by split_staging_file
-        self.storingen = None  # set by split_staging_file
-        self.sbs_patch(project=project)
-        self.split_staging_file()
-
         # General parameters
         # todo: aanpassen zodat geen df maar een dict o.i.d. wordt gebruikt als dtype van de attribute
         self._ld_map = self._read_ld_map()  # df with the mapped location and description
@@ -86,11 +71,24 @@ class StoringsAnalyse(PrepNPlot):
         self.analysis_start_date = self.analysis_time_range[0]
         self.analysis_end_date = self.analysis_time_range[-1]
 
+        # Maximo Parameters
+        self._maximo = QueryMaximoDatabase(api_key)
+        self.response_data = self._maximo.response_data  # is set by get_maximo_export, default = None
+        self.filename_saved_response_data = None
+
+        # Staging File Parameters
+        self.staging_file_name = staging_file_name  # overwritten/also set by build_staging_file
+        self.meldingen = None  # set by split_staging_file
+        self.storingen = None  # set by split_staging_file
+        self.staging_file_path = None
+        self.staging_file_data = None
+        self.init_staging_file()
+
         # Document parameters
         self.rapport_type = rapport_type
         self.graphs = []
 
-        self.metadata.update_meta(staging_file_data=self.staging_file_data)
+        self.update_meta()
 
     """
     Managing modules -- Modules that fulfill some specific general task
@@ -216,6 +214,22 @@ class StoringsAnalyse(PrepNPlot):
     """
     StagingFile modules -- Modules that focus on the actions in relation to the Staging File.
     """
+    # todo: toevoegen aan documentatie
+    def init_staging_file(self, staging_file_name: str = None) -> None:
+        filename_known = False
+        if self.staging_file_name is not None:
+            self.staging_file_path = os.path.join(os.getcwd(), 'data/staging_file', self.staging_file_name)
+            filename_known = True
+        elif staging_file_name is not None:
+            self.staging_file_name = staging_file_name
+            self.staging_file_path = os.path.join(os.getcwd(), 'data/staging_file', self.staging_file_name)
+            filename_known = True
+
+        if filename_known:
+            self.staging_file_data = self.read_staging_file()
+            self.sbs_patch(project=self.project)
+            self.split_staging_file()
+
     def build_staging_file(self, maximo_export_data_filename: str) -> None:
         sfb = StagingFileBuilder(maximo_export_data_filename=maximo_export_data_filename)
         sfb.build_staging_file()
@@ -261,6 +275,11 @@ class StoringsAnalyse(PrepNPlot):
     """
     Metadata modules -- Modules that focus on handling (preperation and transformation) of the input data.
     """
+    def update_meta(self):
+        if self.staging_file_data is not None:
+            self.metadata.update_meta(staging_file_data=self.staging_file_data)
+        else:
+            print("No staging file data found. Can't update meta")
 
     """
     Prep and Plot modules -- Modules that focus on the preperation, transformation and plotting.
