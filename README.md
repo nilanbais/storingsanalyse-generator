@@ -2,8 +2,8 @@
 A repo dedicated to the development of a Notebook that generates the storingsanalyses done by the maintenance engineers.
 
 This documentation also contains the a description of the MetadataStoringsAnalyse class that is used in calculating 
-the results for the rapport. It gives an overview of the modules and attrubutes of the class and example of the usage 
-of these modules and attributes.
+the results for the rapport. It gives an overview of the methods and attrubutes of the class and example of the usage 
+of these methods and attributes.
 
 # Project specific metadata
 To grant the ability to analyse historical data of a given project, a new object needed to be designed. This object is 
@@ -57,7 +57,7 @@ build as presented bellow.
 ---
 ---
 # Classes
-The backend is build using different Python classes, all dedicated to fulfill a specific piece of the process. These classes are summarized bellow and will be explained after that. In this explenation the focus will stay on the endpoints of the classes. Protected attributes and modules will only be explained when this is necessary.
+The backend is build using different Python classes, all dedicated to fulfill a specific piece of the process. These classes are summarized bellow and will be explained after that. In this explenation the focus will stay on the endpoints of the classes. Protected attributes and methods will only be explained when this is necessary.
 
 |Class|Toepassing|
 |-----|----------|
@@ -95,8 +95,8 @@ This class doesn't contain any class variables.
 - *qmdb*.url_parameters - a dictionary containing the url parameters used in querying the database.
 - *qmdb*.headers - a dictionary containing the header data used in querying the database
 
-## Class modules
-### *qmdb*._get_response(query=None) - *protected module*
+## Class methods
+### *qmdb*._get_response(query=None) - *protected method*
 Sends a request to the database to get a response payload. If the parameter is None, it looks at the internal qmdb.query attribute to use as query.
 
 #### Parameters
@@ -115,23 +115,23 @@ Functionality of the *qmdb*.get_response(), but extended with the isolation of t
 - **filename** - A string to specify a filename when saving the data (default=_default_file_name).
 - **query** - A string containing the query that needs to be send to the database (default = None).
 ---
-### *qmdb*.set_site_id(site_id) - *protected module*
-Protected module to create the possibility of setting the site id class attribute after initializing the class-instance. It returns nothing.
+### *qmdb*.set_site_id(site_id) - *protected method*
+Protected method to create the possibility of setting the site id class attribute after initializing the class-instance. It returns nothing.
 
 #### Parameters
 - **site_id** - The site_id you want to set as *qmdb*.site_id.
 ---
 ### *qmdb*.set_object_structure(object_structure='MXWO_SND')
-Protected module to create the possibility of setting the object structure class attribute after initializing the class-instance. It returns nothing.
+Protected method to create the possibility of setting the object structure class attribute after initializing the class-instance. It returns nothing.
 
-This module is executed at initialization of the class instance to set the default value as the object structure.
+This method is executed at initialization of the class instance to set the default value as the object structure.
 
 #### Parameters
 - **object_structure** - The object_structure you want to set as *qmdb*.object_structure (default = 'MXWO_SND').
 ---
 ---
 # Class MetadataStoringsAnalyse
-MetadataStoringsAnalyses supplies modules for manipulating the metadata that is used in the storingsanalyses.
+MetadataStoringsAnalyses supplies methods for manipulating the metadata that is used in the storingsanalyses.
 
 ## Initializing a new instance of the class
 ```
@@ -152,10 +152,10 @@ A class variable is a variable defined inside a class. When making a new instanc
 - *metadata*._year - Internal storage for remembering the year of the analysis that is being executed.
 - *metadata*.unsaved_updated_meta - space to hold the updated metadata before it is saved to longtime storage.
     
-## Class modules
-All the module names are presented with an instance of the class named *metadata*. 
+## Class methods
+All the method names are presented with an instance of the class named *metadata*. 
 
-Only the usable endpoints will be explained in this documentation. The private modules aren't going to be explained.
+Only the usable endpoints will be explained in this documentation. The private methods aren't going to be explained.
 
 ---
 ### *metadata*.get_all_data()
@@ -239,14 +239,14 @@ Returns a filtered dictionary, only containing specified subsystem numbers.
 - **notification_type** - a specification of the dictionary that needs to be filtered ('meldngen' or 'storingen', default = 'meldingen').
 ---
 ### *metadata*.sum_values(dictionary, keys=None)
-Sums up the values of a dictionary. If a dictionary of dictionaries is given, the module will continue to sum up all the values of the underlying dictionaries.
+Sums up the values of a dictionary. If a dictionary of dictionaries is given, the method will continue to sum up all the values of the underlying dictionaries.
 
 #### Parameters
 - **dictionary** - a dictionary of which the values need to be summed.
 - **keys** - one key, or a list of specific keys of which the values need to be summed (default = None).
 ---
 ### *metadata*.count_values(dictionary, keys=None)
-Counts the values of a dictionary. If a dictionary of dictionaries is given, the module will continue to count all the values of the underlying dictionaries.
+Counts the values of a dictionary. If a dictionary of dictionaries is given, the method will continue to count all the values of the underlying dictionaries.
 
 #### Parameters
 - **dictionary** - a dictionary of which the values need to be counted.
@@ -335,7 +335,7 @@ Returns all the available codes corresponding to a poo_type.
 Returns a dictionary containing only the specified notification type (ntype).
 
 #### Parameters
-- **ntype** - the notification type (available ntypes in the module are: 'meldingen' and 'storingen')
+- **ntype** - the notification type (available ntypes in the method are: 'meldingen' and 'storingen')
 ---
 ### *metadata*.update_poo_data(staging_file_data)
 Returns a dictionary that is extended with the new prepared poo data extracted from the database in the process of building the analysis.
@@ -348,22 +348,22 @@ Returns a dictionary that is extended with the new prepared notification type da
 
 #### Parameters
 - **staging_file_data** - a pandas.DataFrame containing the prepared data for the analysis.
-- **ntype** - the notification type (available ntypes in the module are: 'meldingen' and 'storingen')
+- **ntype** - the notification type (available ntypes in the method are: 'meldingen' and 'storingen')
 ---
 ### *metadta*.update_meta(staging_file_data)
-Module that updates the poo data, meldingen and storingen, and saves the result in the attribute *metadta*.unsaved_updated_meta.
+Method that updates the poo data, meldingen and storingen, and saves the result in the attribute *metadta*.unsaved_updated_meta.
 
 #### Parameters
 - **staging_file_data** - a pandas.DataFrame containing the prepared data for the analysis.
 ---
 ---
 # Class PrepNPlot
-PrepNPlot contains modules for the preparation and plotting of the data obtained from the metadata.
+PrepNPlot contains methods for the preparation and plotting of the data obtained from the metadata.
 
 ## Initializing a new instance of the class
 The methode of initializing a new class instance, as shown bellow, can be used with this class but it isn't necessary. 
 Because of the way the StoringsAnalyse-class is build, a new instance of StoringsAnalyse inherits the attributes and 
-modules from PrepNPlot. This makes these attributes and modules available as if they are part of the StoringsAnalyse-class.
+methods from PrepNPlot. This makes these attributes and methods available as if they are part of the StoringsAnalyse-class.
 
 ```
 from prepnplot import PrepNPlot
@@ -381,7 +381,7 @@ A class variable is a variable defined inside a class. When making a new instanc
 - *pp*.last_seen_bin_names - used to cashe the bin_names. Also makes it available to use this data outside of the class-instance.
 - *pp*.quarter_sequence - A LinkedList that is used to return the previous or upcoming quarter. 
 
-## Class modules
+## Class methods
 ### *pp*.replace_seperator(string, inserting_seperator='-')
 Returns the string were the seperator is substituted with the given seperator.
 
@@ -552,13 +552,13 @@ returns data stucture:
 - **bin_names** - List with the unique main level values.
 ---
 ### *pp*._prep_end_step_summary(input_dict)
-Module that counts the times a value has been seen in a bin. 
+Method that counts the times a value has been seen in a bin. 
 
 #### Parameters
 - **input_dict** - The input dictionary (result of *pp*._prep_second_step()).
 ---
 ### *pp*.filter_prep_output(list_of_lists, available_categories)
-This module filers the prep_output to return a modified copy of the list_of_lists (LOL) and the list of
+This method filers the prep_output to return a modified copy of the list_of_lists (LOL) and the list of
 corresponding available categories, where all the categories of which all the values in the LOL are '0'
 are filtered out. Both the objects NEED TO BE sorted and stay in that order.
 
@@ -573,7 +573,7 @@ in the order of the sorted available categories.
 - **available_categories** - a list of all the available categories in the list_of_lists.
 ---
 ### *pp*.prep(input_object, time_range, available_categories, category_key=None, time_key=None, bin_size=False)
-Module that combines the different preparation stages described above, with *pp*._prep_end_step() as last module applied
+Method that combines the different preparation stages described above, with *pp*._prep_end_step() as last method applied
 
 In case of parsing a pandas.DataFrame() it is necessary to parse a time_key and a category_key.
 
@@ -616,7 +616,7 @@ Takes the result of *pp*.prep_summary(), plots it, and returns a Figure object.
 ---
 ---
 # Class StagingFileBuilder
-MetadataStoringsAnalyses supplies modules for manipulating the metadata that is used in the storingsanalyses.
+MetadataStoringsAnalyses supplies methods for manipulating the metadata that is used in the storingsanalyses.
 
 ## Initializing a new instance of the class
 ```
@@ -639,9 +639,9 @@ A class variable is a variable defined inside a class. When making a new instanc
 - *sfb*.workorder - pandas.DataFrame() that contains the workorder related data
 - *sfb*.df_staging_file - pandas.DataFrame() that contains the result of merging the *sfb*.asset_df and *sfb*.workorder. 
 
-## Class modules
+## Class methods
 ### *sfb*.read_sf_data()
-Module for reading the data from the input file and returning this data.
+Method for reading the data from the input file and returning this data.
 
 ---
 ### *sfb*.get_breakdown_descriptions(sbs_lbs_series)
@@ -663,7 +663,7 @@ Saves the pandas.DataFrame() stored as *sfb*.df_staging_file to a file with the 
 
 ---
 ### *sfb*.build_staging_file()
-Combines the main functionality of the class, so it can be executed with one call of a module.
+Combines the main functionality of the class, so it can be executed with one call of a method.
 
 ---
 ---
@@ -677,8 +677,8 @@ from storingsanalyse import StoringsAnalyse
 
 sa = StoringsAnalyse(project, api_key, rapport_type, quarter, year, staging_file_name = None)
 ```
-StoringsAnalyse is a child class of PrepNPlot, meaning it inherits all the attributes and modules from it's parent class (PrepNPlot).
-It will be explicitly mentioned when an attribute or module is overridden by an attribute or module of StoringsAnalyse.
+StoringsAnalyse is a child class of PrepNPlot, meaning it inherits all the attributes and methods from it's parent class (PrepNPlot).
+It will be explicitly mentioned when an attribute or method is overridden by an attribute or method of StoringsAnalyse.
 
 ## Class variables
 A class variable is a variable defined inside a class. When making a new instance of this class, this new instance will also contain this variable.
@@ -701,7 +701,7 @@ A class variable is a variable defined inside a class. When making a new instanc
 - *sa*.analysis_end_date - The end date of the analysis.
 - *sa*._maximo - Instance of QueryMaximoDatabase().
 - *sa*.response_data - copy of the value of QueryMaximoDatabase.response_data in StoringsAnalyse.
-- *sa*.filename_saved_response_data - The filename of the saved maximo response data (default = None and is set by module *sa*.save_maximo_response_data()).
+- *sa*.filename_saved_response_data - The filename of the saved maximo response data (default = None and is set by method *sa*.save_maximo_response_data()).
 - *sa*.staging_file_name - Name of the staging file.
 - *sa*.meldingen - All the notifications obtained through the use of class QueryMaximoDatabase (default = None and is set by *sa*.split_staging_file()).
 - *sa*.storingen - All the notifications with type 'storing' obtained through the use of class QueryMaximoDatabase (default = None and is set by *sa*.split_staging_file()).
@@ -712,7 +712,7 @@ A class variable is a variable defined inside a class. When making a new instanc
 
 IMPORTANT - note that *sa*.metadata.meldingen() and *sa*.meldingen give two different results. Same goes for *sa*.metadata.storingen() and *sa*.storingen.
 
-## Class modules
+## Class methods
 ### *sa*.return_ntype_staging_file_object(ntype)
 Returns a pandas.DataFrame object containing records with the specified notification type (ntype).
 
@@ -731,7 +731,7 @@ Patch for the different notations of the sbs numbers.
 
 ---
 ### *sa*.query_maximo_database(site_id, work_type = 'COR')
-Module to query the maximo database. The module builds the query with the use of the site_id and the work type, and 
+Method to query the maximo database. The method builds the query with the use of the site_id and the work type, and 
 *sa*.analysis_time_range. The received response will be saved in the attribute *sa*.response_data.
 
 #### Parameters
@@ -753,7 +753,7 @@ Returns a string with the correct query that is needed to extract the data from 
 - **work_type** - a short code to specify the type of records that need to be extracted from the database (default = 'COR').
 ---
 ### *sa*.init_staging_file(staging_file_name = None)
-Module for the initialization steps of the staging_file related attributes.
+Method for the initialization steps of the staging_file related attributes.
 
 #### Parameters
 - **staging_file_name** - name of the staging file that is needed to be importen/read (default = None).
@@ -773,28 +773,28 @@ Splits the staging file in two and sets the correct pandas.Dataframes() to *sa*.
 
 ---
 ### *sa*.update_meta()
-Module to extend the metadata with the staging_file data. The staging_file name needs to be known before calling this 
-module, otherwise it will raise an error.
+Method to extend the metadata with the staging_file data. The staging_file name needs to be known before calling this 
+method, otherwise it will raise an error.
 
 ---
 ### *sa*._add_graph_for_export(figure)
-Module that adds the given figure to the attribute *sa*.graphs.
+Method that adds the given figure to the attribute *sa*.graphs.
 
 ### Parameters
 - **figure** - The figure object.
 ---
 ### *sa*.plot(input_data, plot__type, category_labels, bin_labels, title, show_plot = False)
-This module overrides PrepNPlot.plot().
-Module that combines the module PrepNPlot.plot() with *sa*._add_graph_for_export()
+This method overrides PrepNPlot.plot().
+Method that combines the method PrepNPlot.plot() with *sa*._add_graph_for_export()
 
 ---
 ### *sa*.plot_summary(x_labels, data, title, show_plot = False)
-This module overrides PrepNPlot.plot_summary().
-Module that combines the module PrepNPlot.plot_summary() with *sa*._add_graph_for_export()
+This method overrides PrepNPlot.plot_summary().
+Method that combines the method PrepNPlot.plot_summary() with *sa*._add_graph_for_export()
 
 ---
 ### *sa*.export_graphs(filename)
-Module that create a pdf-file containing the graphs added to *sa*.graphs
+Method that create a pdf-file containing the graphs added to *sa*.graphs
 
 #### Parameters
 - **filename** - The filename of the saved file.
@@ -809,4 +809,4 @@ Module that create a pdf-file containing the graphs added to *sa*.graphs
 ## Class variables
 
 
-## Class modules
+## Class methods

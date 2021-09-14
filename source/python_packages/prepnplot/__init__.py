@@ -100,7 +100,7 @@ class PrepNPlot:
         self.quarter_sequence = self.__build_quarter_linkedlist()
 
     """
-    Managing modules -- Modules that influence the attributes of PrepNPlot.
+    Managing methods -- methods that influence the attributes of PrepNPlot.
     """
     # todo: aanpassen naar de beste data strucuur om verschillende figuren vast te leggen
     def __build_quarter_linkedlist(self):
@@ -121,7 +121,7 @@ class PrepNPlot:
                     return llist
 
     """
-    Preperation modules -- Modules that focus on the preperation and transformation of the input data.
+    Preperation methods -- methods that focus on the preperation and transformation of the input data.
     """
     @staticmethod
     def _get_first_element(input_object: dict or list):
@@ -204,7 +204,7 @@ class PrepNPlot:
             {'bin_1': [list of months belonging to the specified bin],
              'bin_2': [list of months belonging to the specified bin]}
 
-        Time range needs to consist of a month and a year. If not given, the range will be [oldest know time, youngest knows time] or the module will raise and error.
+        Time range needs to consist of a month and a year. If not given, the range will be [oldest know time, youngest knows time] or the method will raise and error.
 
         :param bin_size:
         :param time_range: time range of the bins (objects need to have a month and year).
@@ -506,7 +506,7 @@ class PrepNPlot:
 
     def _prep_end_step_summary(self, input_dict: dict) -> int:
         """
-        Module that counts the times a value has been seen in a bin.
+        method that counts the times a value has been seen in a bin.
         It is save to assume that the main level of keys are the dict names.
         Input is the output of step two.
         """
@@ -534,7 +534,7 @@ class PrepNPlot:
         # todo: Het kan zijn dat de functie gebruikt wordt en dat er geen time_range gespecificeerd kan worden
         #  (of dat men dat niet wil) dus er moet nog iets komen voor deze situaties
 
-        # todo: Module schrijven voor functionaliteit dat kwartalen van verschillende jaren vergeleken kunnen worden.
+        # todo: method schrijven voor functionaliteit dat kwartalen van verschillende jaren vergeleken kunnen worden.
 
         _input_object = (input_object, time_key, category_key) if isinstance(input_object, DataFrame) else input_object
 
@@ -608,7 +608,7 @@ class PrepNPlot:
         return result_step_three
 
     """
-    Plot modules -- Modules that focus on setting up the parameters for plotting and plotting of the figure.
+    Plot methods -- methods that focus on setting up the parameters for plotting and plotting of the figure.
     """
     def plot(self, input_data: List[list], plot_type: str, category_labels: list, bin_labels: list, title: str, show_plot: bool = False) -> Figure:
         """
@@ -711,7 +711,7 @@ class PrepNPlot:
     @staticmethod
     def filter_prep_output(list_of_lists: List[list], available_categories: List[str]) -> Tuple[List[str], List[list]]:
         """
-        This module filers the prep_output to return a modified copy of the list_of_lists (LOL) and the list of
+        This method filers the prep_output to return a modified copy of the list_of_lists (LOL) and the list of
         corresponding available categories, where all the categories of which all the values in the LOL are '0'
         are filtered out. Both the objects NEED TO BE sorted and stay in that order.
         IMPORTANT -----------------------------------------------------------------------------------------------

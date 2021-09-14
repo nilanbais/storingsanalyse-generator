@@ -185,7 +185,7 @@ class StagingFileBuilder:
     @staticmethod
     def _read_ld_map() -> pd.DataFrame:
         """
-        Module to load the data for the descriptions of the location breakdown structure numbers (LBS) and the system
+        method to load the data for the descriptions of the location breakdown structure numbers (LBS) and the system
         breakdown structure numbers (SBS).
         :return:
         """
@@ -217,7 +217,7 @@ class StagingFileBuilder:
 
     def build_base_df(self) -> str:
         """
-        Module for building the base dataframe of the staging file. the base dataframe isn't anything more than
+        method for building the base dataframe of the staging file. the base dataframe isn't anything more than
         the maximo export data without any nested json
         :return:
         """
@@ -290,7 +290,7 @@ class StagingFileBuilder:
 
     def prep_staging_file_df(self) -> str:
         """
-        Module for preping the base dataframe to a dataframe that can be exported as staging file.
+        method for preping the base dataframe to a dataframe that can be exported as staging file.
         It contains getting the descriptions of the sbs/lbs numbers, cleaning some data, and preping column names to
         a uniform form so they can be used to build the staging file.
         :return:
@@ -377,7 +377,7 @@ class StagingFileBuilder:
 
     def save_staging_file(self) -> str:
         """
-        Module for saving the staging file. It also adds the dropdown for the list for inserting the different types
+        method for saving the staging file. It also adds the dropdown for the list for inserting the different types
         of notifications.
         :return:
         """

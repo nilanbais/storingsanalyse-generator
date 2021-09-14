@@ -89,12 +89,12 @@ class StoringsAnalyse(PrepNPlot):
         self.update_meta()
 
     """
-    Managing modules -- Modules that fulfill some specific general task
+    Managing methods -- methods that fulfill some specific general task
     """
     @staticmethod
     def _read_ld_map() -> DataFrame:
         """
-        Module to load the data for the descriptions of the location breakdown structure numbers (LBS) and the system
+        method to load the data for the descriptions of the location breakdown structure numbers (LBS) and the system
         breakdown structure numbers (SBS).
         :return:
         """
@@ -158,7 +158,7 @@ class StoringsAnalyse(PrepNPlot):
         return [start_date, end_date]
 
     """
-    Patch modules -- Modules that make adjustments that are easier/faster to change in a patch than to solve in source
+    Patch methods -- methods that make adjustments that are easier/faster to change in a patch than to solve in source
     """
     def sbs_patch(self, project: str) -> None:
         """
@@ -176,7 +176,7 @@ class StoringsAnalyse(PrepNPlot):
             self.staging_file_data['sbs'] = new_data
 
     """
-    Database modules -- Modules that focus on the interaction with the database (all _maximo related moludes).
+    Database methods -- methods that focus on the interaction with the database (all _maximo related moludes).
     """
     def query_maximo_database(self, site_id: str, work_type: str = "COR") -> str:
         query = self.build_query(site_id, self.analysis_time_range, work_type)
@@ -206,9 +206,9 @@ class StoringsAnalyse(PrepNPlot):
         return query
 
     """
-    StagingFile modules -- Modules that focus on the actions in relation to the Staging File.
+    StagingFile methods -- methods that focus on the actions in relation to the Staging File.
     """
-    # todo: workflow van module aanpassen wanneer set_staging_file is geschreven
+    # todo: workflow van method aanpassen wanneer set_staging_file is geschreven
     def init_staging_file(self, staging_file_name: str = None) -> None:
         filename_known = False
         if self.staging_file_name is not None:
@@ -224,7 +224,7 @@ class StoringsAnalyse(PrepNPlot):
             self.sbs_patch(project=self.project)
             self.split_staging_file()
 
-    # todo: module set_staging_file_name met automatisch aanroepen init_staging_file en checks etc.
+    # todo: method set_staging_file_name met automatisch aanroepen init_staging_file en checks etc.
     def set_staging_file_name(self, staging_file_name: str) -> None:
         pass
 
@@ -270,7 +270,7 @@ class StoringsAnalyse(PrepNPlot):
         return result
 
     """
-    Metadata modules -- Modules that focus on handling (preperation and transformation) of the input data.
+    Metadata methods -- methods that focus on handling (preperation and transformation) of the input data.
     """
     def update_meta(self):
         if self.staging_file_data is not None:
@@ -279,7 +279,7 @@ class StoringsAnalyse(PrepNPlot):
             print("No staging file data found. Can't update meta")
 
     """
-    Prep and Plot modules -- Modules that focus on the preperation, transformation and plotting.
+    Prep and Plot methods -- methods that focus on the preperation, transformation and plotting.
     """
     def _add_graph_for_export(self, figure: Figure) -> None:
         self.graphs.append(figure)

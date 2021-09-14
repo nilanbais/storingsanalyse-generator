@@ -37,7 +37,7 @@ class DocumentGeneratorCoentunnel:
         self._default_export_location = "documents/generated_documents"
 
     """
-    Managing modules -- Modules that fulfill some specific general task
+    Managing methods -- methods that fulfill some specific general task
     """
     def __aantal_per_maand(self, input_data: DataFrame, ntype: str) -> dict:
         meta_data_ntype = self.sa.metadata.return_ntype_meta_object(ntype=ntype)
@@ -256,12 +256,12 @@ class DocumentGeneratorCoentunnel:
 
     def get_poo_table_data_md(self, poo_type: str) -> dict:
         """
-        Retrieves/collects the data for the poo table in a way that is compatible wit the module that builds
+        Retrieves/collects the data for the poo table in a way that is compatible wit the method that builds
         the markdown style table.
         :param poo_type:
         :return:
         """
-        # todo: build a module to update the meta with the staging file poo data. this action gets easier when only
+        # todo: build a method to update the meta with the staging file poo data. this action gets easier when only
         #  needing to acces poo_from_meta
         poo_type_string = self.sa.metadata.return_poo_type_string(poo_type)
 
@@ -307,12 +307,12 @@ class DocumentGeneratorCoentunnel:
 
     def get_poo_table_data_v2(self, poo_type: str) -> dict:
         """
-        Retrieves/collects the data for the poo table in a way that is compatible wit the module that builds
+        Retrieves/collects the data for the poo table in a way that is compatible wit the method that builds
         the docx style table.
         :param poo_type:
         :return:
         """
-        # todo: build a module to update the meta with the staging file poo data. this action gets easier when only
+        # todo: build a method to update the meta with the staging file poo data. this action gets easier when only
         #  needing to acces poo_from_meta
         poo_type_string = self.sa.metadata.return_poo_type_string(poo_type)
 
@@ -513,7 +513,7 @@ class DocumentGeneratorCoentunnel:
 
     def build_asset_uitwerking_ntypes_v2(self, input_dict: dict, docx_paragraph_object, docx_object: docx.Document) -> None:
         """
-        de v2 modules combineren het opstellen van de data met het schrijven naar het docx_object
+        de v2 methods combineren het opstellen van de data met het schrijven naar het docx_object
         :param input_dict:
         :param docx_paragraph_object: type = docx.text.paragraph.Paragraph maar 'text' wordt niet herkend
         :param docx_object:
@@ -567,7 +567,7 @@ class DocumentGeneratorCoentunnel:
         return text
 
     """
-    Full document builders - Modules that are responsible 
+    Full document builders - methods that are responsible 
     """
     def build_full_document(self, threshold: int = 3):
         # todo: aanpassen zodat de bold koppen level 3 koppen worden
