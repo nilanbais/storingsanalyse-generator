@@ -520,7 +520,7 @@ class MetadataStoringsAnalyse:
         pass
 
 
-if __name__ == '__main__':
+def main() -> None:
     import os
     os.chdir('..\\rapport generator')
 
@@ -568,3 +568,7 @@ if __name__ == '__main__':
     print([metadata.sum_values(dictionary=poo[_], keys=['P05']) for _ in poo.keys()])
 
     x = metadata.unsaved_updated_meta
+
+
+if __name__ == '__main__':
+    main()
