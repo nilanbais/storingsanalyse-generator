@@ -114,17 +114,6 @@ class StagingFileBuilder:
     # Initializing standard variables
     suffixes = ['_asset1', '_asset2']
 
-    # todo: onderstaande verwerken
-    """
-    ---- STAGING FILE OMBOUWEN IN PLAATS VAN UIT FUSEREN ----
-    Het idee is om niet de staging file builder te verwijderen uit het process, maar de StagingFileBuiler 
-    verantwoordelijk te maken voor het transformeren van de ruwe database export naar een door StoringsAnalyse 
-    bruikbare structuur. 
-    Dit zorgt ervoor dat de einpunbten van de StagingFileBuilder gebruikt kunnen worden. Misschien hier iets een
-    beetje uitbreiden, maar dat is niet erg.
-    
-    """
-
     def __init__(self, maximo_export_data_filename) -> None:
         self.input_file_name = maximo_export_data_filename
         self.export_file_name = None
@@ -461,11 +450,14 @@ class StagingFileBuilder:
         self.save_staging_file()
 
 
-if __name__ == '__main__':
-
+def main() -> None:
     sfb = StagingFileBuilder(maximo_export_data_filename='raw_json_payload.json')
     sfb.build_base_df()
 
     sfb.prep_staging_file_df()
 
     sfb.save_staging_file()
+
+
+if __name__ == '__main__':
+    main()
