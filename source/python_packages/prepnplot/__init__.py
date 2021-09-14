@@ -148,7 +148,7 @@ class PrepNPlot:
                 string = string.replace(separator, inserting_separator)
         return string
 
-    def _prep_time_range(self, time_range: [str, str]):
+    def _prep_time_range(self, time_range: [str, str]) -> List[datetime]:
         """
         Returns list of datetime objects when given strings.
         :param time_range:
@@ -169,7 +169,8 @@ class PrepNPlot:
 
         return new_time_range
 
-    def _get_time_range_base(self, time_range: [datetime, datetime]) -> list:
+    @staticmethod
+    def _get_time_range_base(time_range: [datetime, datetime]) -> list:
         """
         Returns a list with all the months between the start and end of the input time range
         :param time_range:
@@ -229,7 +230,7 @@ class PrepNPlot:
 
         return binned_dictionary
 
-    def _months_in_year_bin(self):
+    def _months_in_year_bin(self) -> set:
         """
         Returns a set of the months, build from the values of the _quarters dictionary.
         :return:
@@ -239,7 +240,6 @@ class PrepNPlot:
             month_set = set.union(month_set, self._quarters[list(self._quarters.keys())[index]])
         return month_set
 
-    # todo: aanpassen in documentatie
     def _month_num_to_name(self, month_num: int or list) -> str:
         if isinstance(month_num, list):
             maand = [self._maand_dict[str(num)] for num in month_num for key in self._maand_dict.keys() if str(num) == key]
@@ -708,7 +708,6 @@ class PrepNPlot:
 
         return fig
 
-    # todo: toevoegen aan documentatie
     @staticmethod
     def filter_prep_output(list_of_lists: List[list], available_categories: List[str]) -> Tuple[List[str], List[list]]:
         """
@@ -740,7 +739,7 @@ class PrepNPlot:
         return result_categories, result_list_of_lists
 
 
-if __name__ == '__main__':
+def main() -> None:
     import random
 
     pp = PrepNPlot()
@@ -770,3 +769,7 @@ if __name__ == '__main__':
     print(f"x next = {x.next.data}")
     prev_quarter = pp.quarter_sequence.get_prev_val('Q2')
     print(prev_quarter)
+
+
+if __name__ == '__main__':
+    main()

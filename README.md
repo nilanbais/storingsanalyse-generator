@@ -417,6 +417,12 @@ Returns a list with all the months between the start and end of the input time r
 Returns a set of the months, build from the values of the _quarters dictionary.
 
 ---
+### *pp*._month_num_to_name(month_num)
+Returns the writen out month name of the corresonding month number.
+
+#### Parameters
+- **monnth_num** - A single month number, or a list of month numbers.
+---
 ### *pp*.prettify_time_label(label)
 Returns a prettified string in which the separator is removed and the month number is substituted for the
 written out month name ('03_2018' -> 'Maart 2018' and 'Q4_2020' -> 'Q4 2020')
@@ -550,7 +556,21 @@ Module that counts the times a value has been seen in a bin.
 
 #### Parameters
 - **input_dict** - The input dictionary (result of *pp*._prep_second_step()).
+---
+### *pp*.filter_prep_output(list_of_lists, available_categories)
+This module filers the prep_output to return a modified copy of the list_of_lists (LOL) and the list of
+corresponding available categories, where all the categories of which all the values in the LOL are '0'
+are filtered out. Both the objects NEED TO BE sorted and stay in that order.
 
+IMPORTANT
+
+The list with the available categories needs to be sorted. The function build_output_first_step takes
+the available categories and sorts them when using them. This means that the list of lists created is
+in the order of the sorted available categories.
+
+#### Parameters
+- **list_of_lists** - the list of lists to the values corresponding to the available categories.
+- **available_categories** - a list of all the available categories in the list_of_lists.
 ---
 ### *pp*.prep(input_object, time_range, available_categories, category_key=None, time_key=None, bin_size=False)
 Module that combines the different preparation stages described above, with *pp*._prep_end_step() as last module applied
