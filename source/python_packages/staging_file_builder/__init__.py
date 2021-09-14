@@ -8,6 +8,7 @@ This script is used to generate a staging_file in which the maintenance engineer
 A dictionary is used for the mapping of the attribute names based on the names of the columns in the staging_file and
 the report
 """
+import datetime
 import json
 import os
 import string
@@ -15,6 +16,8 @@ from datetime import datetime as dt
 
 import numpy as np
 import pandas as pd
+
+from typing import List
 
 # from mapped_attribute_names import workorder_attribute_names as wan, asset_attribute_names as aan, dt_attributes
 # from mapped_attribute_names import staging_file_columns1 as new_col_order
@@ -122,7 +125,7 @@ class StagingFileBuilder:
     
     """
 
-    def __init__(self, maximo_export_data_filename):
+    def __init__(self, maximo_export_data_filename) -> None:
         self.input_file_name = maximo_export_data_filename
         self.export_file_name = None
 
@@ -136,7 +139,7 @@ class StagingFileBuilder:
         self.df_staging_file = pd.DataFrame()
 
     @staticmethod
-    def _switch_key_val(dictionary):
+    def _switch_key_val(dictionary: dict) -> dict:
         """
         Switches the key: val to val: key of the given dictionary
         :param dictionary:
@@ -145,7 +148,7 @@ class StagingFileBuilder:
         return {dictionary[key]: key for key in dictionary.keys()}
 
     @staticmethod
-    def _clean_dt_object(dt_object):
+    def _clean_dt_object(dt_object: str) -> datetime.datetime:
         """
         Het kan zijn dat de %z voor de tijdzone niet wordt herkend in andere os (mac-os/linux). op de jupyter server is
         dt_object = dt_object.split('+')[0] toegevoegd om dit op te lossen.
@@ -162,7 +165,7 @@ class StagingFileBuilder:
             return clean_object
 
     @staticmethod
-    def _get_month_number(dt_object):
+    def _get_month_number(dt_object: datetime.datetime) -> str:
         """
         Automation of extracting the number of the month in the dt_object that has been adjusted by clean_dt_object() and
         has the form dd-mm-yy hours:min:sec
@@ -178,7 +181,7 @@ class StagingFileBuilder:
             return month_num
 
     @staticmethod
-    def _update_description(map_dict, suffix):
+    def _update_description(map_dict: dict, suffix: str) -> None:
         """
         Updates the description with the specufied suffix in the mapped dict used to assign readable column names
         in the staging file.
@@ -191,7 +194,7 @@ class StagingFileBuilder:
                 map_dict[key] = map_dict[key] + suffix
 
     @staticmethod
-    def _read_ld_map():
+    def _read_ld_map() -> pd.DataFrame:
         """
         Module to load the data for the descriptions of the location breakdown structure numbers (LBS) and the system
         breakdown structure numbers (SBS).
@@ -201,18 +204,18 @@ class StagingFileBuilder:
             description_data = json.load(file)
         return pd.DataFrame(description_data)
 
-    def _get_breakdown_description(self, sbs_lbs):
+    def _get_breakdown_description(self, sbs_lbs: str) -> List[str]:
         description = [self._ld_map.loc[str(index), 'description']
                        for index in range(self._ld_map.shape[0])
                        if sbs_lbs == self._ld_map.loc[str(index), 'location']]
         return description if len(description) > 0 else [""]  # To cover empty rows
 
-    def get_breakdown_descriptions(self, sbs_lbs_series):
+    def get_breakdown_descriptions(self, sbs_lbs_series: pd.Series) -> List[List[str]]:
         description_list = [self._get_breakdown_description(sbs_lbs) for sbs_lbs in sbs_lbs_series]
         return description_list
 
     @staticmethod
-    def _del_suffix(dictionary):
+    def _del_suffix(dictionary: dict) -> dict:
         def clean_key(a): return a.replace('_asset1', '') if '1' in a else a.replace('_asset', ' ')
 
         new_dictionary = {clean_key(key): dictionary[key] for key in dictionary.keys()}
