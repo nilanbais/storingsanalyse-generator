@@ -34,7 +34,6 @@ from datetime import datetime, timedelta
 from calendar import monthrange
 
 
-# Todo: documentatie schrijven voor class
 # Todo: Kijken hoe het type rapport (kwartaal of jaar) ingebouwd moet worden (wss als extra parameter bij aanmaken \
 #  instance o.i.d.)
 class StoringsAnalyse(PrepNPlot):
@@ -44,7 +43,6 @@ class StoringsAnalyse(PrepNPlot):
     _ld_map_path = "resources/information_mapping/location_description_map.json"
     _default_file_name_maximo = f"{str(datetime.now().date()).replace('-', '')}_{str(datetime.now().time().hour)}_{str(datetime.now().time().minute)}_maximo_response_data.json"
 
-    # todo aanpassen in documentatie
     def __init__(self, project: str, api_key: str, rapport_type: str, quarter: str, year: str, staging_file_name: str = None) -> None:
         # PrepNPlot Parameters
         PrepNPlot.__init__(self)
@@ -114,7 +112,6 @@ class StoringsAnalyse(PrepNPlot):
     def _isolate_di_number(asset_num_string: str) -> str:
         return asset_num_string.split('-')[0]
 
-    # todo: toevoegen aan documentatie
     def return_ntype_staging_file_object(self, ntype: str) -> DataFrame:
         if ntype.lower() == 'meldingen':
             staging_data_ntype = self.meldingen
@@ -130,7 +127,6 @@ class StoringsAnalyse(PrepNPlot):
             raise ValueError("Please parse 'meldingen' or 'storingen' as ntype.")
         return staging_data_ntype
 
-    # Todo: toevoegen aan documentatie
     def get_min_max_months(self, notifications_groupby_months: dict, min_max: str) -> list:
         """
         Returns a list with the names of the month(s) corresponding to the values based on the parameter min_max
@@ -161,7 +157,6 @@ class StoringsAnalyse(PrepNPlot):
         end_date = start_date + timedelta(days=(time_delta_days - 1))  # timedelta is UP UNTIL the first day of next Q, - 1 days to get last day of current Q
         return [start_date, end_date]
 
-    # todo: toevoegen aan documentatie
     """
     Patch modules -- Modules that make adjustments that are easier/faster to change in a patch than to solve in source
     """
@@ -183,15 +178,14 @@ class StoringsAnalyse(PrepNPlot):
     """
     Database modules -- Modules that focus on the interaction with the database (all _maximo related moludes).
     """
-    # todo: aanpassen in documentatie
-    def query_maximo_database(self, site_id: str, work_type: str = "COR") -> str:  # todo: naam veranderen naar query_maximo_database (ook in documentatie)
+    def query_maximo_database(self, site_id: str, work_type: str = "COR") -> str:
         query = self.build_query(site_id, self.analysis_time_range, work_type)
         self._maximo.get_response_data(query=query)  # sets self.response_data
         return "Query finished successfully."
 
-    # todo: aanpassen in documentatie
     def save_maximo_response_data(self, filename: str = _default_file_name_maximo) -> None:
         _filename = filename
+        # todo: file path specificeren en het bestand daar opslaan
         with open(_filename, 'w') as output_file:
             json.dump(self.response_data, output_file, indent=6)
 
@@ -214,7 +208,7 @@ class StoringsAnalyse(PrepNPlot):
     """
     StagingFile modules -- Modules that focus on the actions in relation to the Staging File.
     """
-    # todo: toevoegen aan documentatie
+    # todo: workflow van module aanpassen wanneer set_staging_file is geschreven
     def init_staging_file(self, staging_file_name: str = None) -> None:
         filename_known = False
         if self.staging_file_name is not None:
@@ -230,6 +224,10 @@ class StoringsAnalyse(PrepNPlot):
             self.sbs_patch(project=self.project)
             self.split_staging_file()
 
+    # todo: module set_staging_file_name met automatisch aanroepen init_staging_file en checks etc.
+    def set_staging_file_name(self, staging_file_name: str) -> None:
+        pass
+
     def build_staging_file(self, maximo_export_data_filename: str) -> None:
         sfb = StagingFileBuilder(maximo_export_data_filename=maximo_export_data_filename)
         sfb.build_staging_file()
@@ -238,7 +236,6 @@ class StoringsAnalyse(PrepNPlot):
     def read_staging_file(self) -> DataFrame:
         return pd.read_excel(self.staging_file_path, engine='openpyxl')
 
-    # Todo: output type aanpassen in documentatie
     def split_staging_file(self) -> None:
         self.meldingen = self.staging_file_data
         self.storingen = self._isolate_notification_type(like_ntype='storingen')

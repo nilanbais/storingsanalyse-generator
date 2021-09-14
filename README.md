@@ -671,40 +671,92 @@ Combines the main functionality of the class, so it can be executed with one cal
 Python Class that combines the functionalities of the other classes that need to be applied and makes them available in the User Interface (Jupyter Notebook).
 
 ## Initializing a new instance of the class
+How to create a new instance of the class is shown bellow. In this creation, the specification of the staging_file_name is optional (default = None). 
 ```
 from storingsanalyse import StoringsAnalyse
 
-sa = StoringsAnalyse(project, api_key, object_structure)
+sa = StoringsAnalyse(project, api_key, rapport_type, quarter, year, staging_file_name = None)
 ```
+StoringsAnalyse is a child class of PrepNPlot, meaning it inherits all the attributes and modules from it's parent class (PrepNPlot).
+It will be explicitly mentioned when an attribute or module is overridden by an attribute or module of StoringsAnalyse.
 
 ## Class variables
 A class variable is a variable defined inside a class. When making a new instance of this class, this new instance will also contain this variable.
 
 - **_ld_map_path** - The file path to the file 'location_destination_map.json'. This file is used internally in this class to gather the descriptions belonging to the different SBS and LBS numbers.
+- **_default_file_name_maximo** - The default filename used when saving the raw data received from the maximo server.
 
 ## Class attributes
 - *sa*.metadata - Instance of MetadataStoringsAnalyse().
+- *sa*.project - Name of the given project, obtained from the metadata.  
+- *sa*.project_start_date - Start date of the given project, obtained from the metadata.
+- *sa*.quarter - Quarter of the current analysis.  
+- *sa*.year - Year of the current analysis.
+- *sa*.prev_quarter - The previous quarter, seen from the current quarter.
+- *sa*.prev_year - The previous year, seen from the current year.
+- *sa*.metadata._quarter - The attribute is set for internal use of the quarter in the MetadataStoringsAnalyse().
+- *sa*.metadata._year - The attribute is set for internal use of the year in the MetadataStoringsAnalyse().
+- *sa*.analysis_time_range - The timerange of the analysis.
+- *sa*.analysis_start_date - The start date of the analysis.
+- *sa*.analysis_end_date - The end date of the analysis.
 - *sa*._maximo - Instance of QueryMaximoDatabase().
-- *sa*.response_data - QueryMaximoDatabase().response_data.
-- *sa*.filename_saved_response_data - QueryMaximoDatabase()._default_file_name.
+- *sa*.response_data - copy of the value of QueryMaximoDatabase.response_data in StoringsAnalyse.
+- *sa*.filename_saved_response_data - The filename of the saved maximo response data (default = None and is set by module *sa*.save_maximo_response_data()).
 - *sa*.staging_file_name - Name of the staging file.
-- *sa*.staging_file_path - Path to the staging file.
-- *sa*.staging_file_data - Data from the staging file.
-- *sa*.meldingen - All the notifications obtained through the use of QueryMaximoDatabase().
-- *sa*.storingen - All the notifications with type 'storing' obtained through the use of QueryMaximoDatabase().
-- *sa*.project - Name of the given project, obtained from the metadata.
-- *sa*.start_date - Start date of the given project, obtained from the metadata.
+- *sa*.meldingen - All the notifications obtained through the use of class QueryMaximoDatabase (default = None and is set by *sa*.split_staging_file()).
+- *sa*.storingen - All the notifications with type 'storing' obtained through the use of class QueryMaximoDatabase (default = None and is set by *sa*.split_staging_file()).
+- *sa*.staging_file_path - Path to the staging file (default = None and is set by *sa*.init_staging_file()).
+- *sa*.staging_file_data - Data from the staging file (default = None and is set by *sa*.init_staging_file()).
+- *sa*.rapport_type - Specification if the rapport is a quarterly analysis or a yearly analysis.
+- *sa*.graphs - An attribute to hold all the graphs that are created.
 
 IMPORTANT - note that *sa*.metadata.meldingen() and *sa*.meldingen give two different results. Same goes for *sa*.metadata.storingen() and *sa*.storingen.
 
 ## Class modules
-### *sa*.get_maximo_export(query=None)
-See *qmdb*.get_response_data(query=None).
+### *sa*.return_ntype_staging_file_object(ntype)
+Returns a pandas.DataFrame object containing records with the specified notification type (ntype).
+
+#### Parameters
+- **ntype** - The notification type that is needed to be isolated (options are 'meldingen', 'stroingen', 'onterecht', 'preventief', 'incident').
+---
+### *sa*.get_min_max_month(notificaions_groupby_month, min_max)
+Returns a list with the names of the month or months that correspond to the maximum or minimum number of notifications.
+
+#### Parameters
+- **notifications_groupby_month** - a dictionary of the notifications grouped by the month in which they were reported.
+- **min_max** - Specification of if the returned value needs to be the minimum or maximum (using 'min' or 'max').
+---
+### *sa*.sbs_patch(project)
+Patch for the different notations of the sbs numbers.
 
 ---
-### *sa*.save_maximo_export(query=None)
-See *qmdb*.save_response_data(filename=_default_file_name, query=None).
+### *sa*.query_maximo_database(site_id, work_type = 'COR')
+Module to query the maximo database. The module builds the query with the use of the site_id and the work type, and 
+*sa*.analysis_time_range. The received response will be saved in the attribute *sa*.response_data.
 
+#### Parameters
+- **site_id** - id code to specify the site of which the data is needed to be received.
+- **work_type** - a short code to specify the type of records that need to be extracted from the database (default = 'COR').
+---
+### *sa*.save_maximo_response_data(filename = _default_file_name_maximo)
+Saves the response data as a .json-file. 
+
+#### Parameters
+- **filename** - The filename of the under which the data is stored (default = _default_file_name_maximo).
+---
+### *sa*.build_query(site_id, report_time, work_type = 'COR')
+Returns a string with the correct query that is needed to extract the data from the maximo database.
+
+#### Parameters
+- **site_id** - id code to specify the site of which the data is needed to be received.
+- **report_time** - A list containing the datetime object of the start date and end date of the analysis.  
+- **work_type** - a short code to specify the type of records that need to be extracted from the database (default = 'COR').
+---
+### *sa*.init_staging_file(staging_file_name = None)
+Module for the initialization steps of the staging_file related attributes.
+
+#### Parameters
+- **staging_file_name** - name of the staging file that is needed to be importen/read (default = None).
 ---
 ### *sa*.build_staging_file(maximo_export_data_filename)
 See *sfb*.build_staging_file().
@@ -720,8 +772,41 @@ Sets *sa*.staging_file_data to a pandas.DataFrame() filled with the data from th
 Splits the staging file in two and sets the correct pandas.Dataframes() to *sa*.meldingen and *sa*.storingen.
 
 ---
-### *sa*.make_frequency_table(di_series)
-Takes a pandas.Series() and returns a frequency table.
+### *sa*.update_meta()
+Module to extend the metadata with the staging_file data. The staging_file name needs to be known before calling this 
+module, otherwise it will raise an error.
 
 ---
+### *sa*._add_graph_for_export(figure)
+Module that adds the given figure to the attribute *sa*.graphs.
 
+### Parameters
+- **figure** - The figure object.
+---
+### *sa*.plot(input_data, plot__type, category_labels, bin_labels, title, show_plot = False)
+This module overrides PrepNPlot.plot().
+Module that combines the module PrepNPlot.plot() with *sa*._add_graph_for_export()
+
+---
+### *sa*.plot_summary(x_labels, data, title, show_plot = False)
+This module overrides PrepNPlot.plot_summary().
+Module that combines the module PrepNPlot.plot_summary() with *sa*._add_graph_for_export()
+
+---
+### *sa*.export_graphs(filename)
+Module that create a pdf-file containing the graphs added to *sa*.graphs
+
+#### Parameters
+- **filename** - The filename of the saved file.
+---
+---
+# Class DocumentGenerator
+
+
+## Initializing a new instance of the class
+
+
+## Class variables
+
+
+## Class modules
