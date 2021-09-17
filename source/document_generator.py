@@ -12,7 +12,7 @@ from pandas import DataFrame
 import numpy as np
 import docx
 import os
-from typing import Tuple, Iterable
+from typing import Tuple, Iterable, List
 
 # todo: onderstaande verwerken
 """
@@ -67,7 +67,7 @@ class DocumentGeneratorCoentunnel:
 
         return data_dict
 
-    def build_table_docx(self, docx_object: docx.Document, headers: Tuple, row_data: Iterable[str]) -> None:
+    def build_table_docx(self, docx_object: docx.Document, headers: Tuple, row_data: List[Tuple[str, str]]) -> None:
         table = docx_object.add_table(1, cols=len(headers))
         table.style = docx_object.styles['Light Grid']
         # Adding headers
