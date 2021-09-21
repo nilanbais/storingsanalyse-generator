@@ -26,7 +26,7 @@ worden toegepast om de data op de juiste plek in de tekst te substitueren.
 # todo: toevoegen aan documentatie
 class DocumentGeneratorCoentunnel:
 
-    def __init__(self, project: str, api_key: str, rapport_type: str, quarter: str, year: str, staging_file_name: str) -> None:
+    def __init__(self, project: str, api_key: str, rapport_type: str, quarter: str, year: str, staging_file_name: str = None) -> None:
         self.sa = StoringsAnalyse(project, api_key, rapport_type, quarter, year, staging_file_name)
         self.newline = "\n"
         self.tab = "\t"
