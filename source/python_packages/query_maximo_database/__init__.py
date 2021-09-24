@@ -7,6 +7,8 @@ import requests
 import json
 from typing import Union
 
+import pandas as pd
+
 
 # todo: api_get_request OSLC request maximo o.i.d.
 class QueryMaximoDatabase:
@@ -66,9 +68,9 @@ class QueryMaximoDatabase:
 
     def _get_dump_list(self) -> None:
         json_data = self.response.json()
-        _links = [x.values() for x in json_data['member']]
+        _links = pd.DataFrame(data=json_data['member'])
         dump_list = []
-        for url in _links:
+        for url in _links['href']:
             r = requests.get(url, headers=self.headers, params=self.parameters)
             raw_response_data = r.json()
             dump_list.append(raw_response_data)

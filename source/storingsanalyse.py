@@ -43,6 +43,10 @@ class StoringsAnalyse(PrepNPlot):
     _ld_map_path = "resources/information_mapping/location_description_map.json"
     _default_file_name_maximo = f"{str(datetime.now().date()).replace('-', '')}_{str(datetime.now().time().hour)}_{str(datetime.now().time().minute)}_maximo_response_data.json"
 
+    # Todo: toevoegen aan documentatie
+    _site_id_dict = {"Coentunnel-tracé": "CT1EN2",
+                     "Sluis Eefde": ""}
+
     def __init__(self, project: str, api_key: str, rapport_type: str, quarter: str, year: str, staging_file_name: str = None) -> None:
         # PrepNPlot Parameters
         PrepNPlot.__init__(self)
@@ -73,6 +77,7 @@ class StoringsAnalyse(PrepNPlot):
         self._maximo = QueryMaximoDatabase(api_key)
         self.response_data = self._maximo.response_data  # is set by get_maximo_export, default = None
         self.filename_saved_response_data = None
+        self._maximo.set_site_id(self.get_site_id())
 
         # Staging File Parameters
         self.staging_file_name = staging_file_name  # overwritten/also set by build_staging_file
@@ -178,8 +183,19 @@ class StoringsAnalyse(PrepNPlot):
     """
     Database methods -- methods that focus on the interaction with the database (all _maximo related moludes).
     """
-    def query_maximo_database(self, site_id: str, work_type: str = "COR") -> str:
-        query = self.build_query(site_id, self.analysis_time_range, work_type)
+    # Todo: toevoegen aan documentatie
+    def check_site_id_value(self) -> None:
+        if self._maximo.site_id is None:
+            raise ValueError("Site_id can't have value None. Please parse a value for site_id.")
+
+    # Todo: toevoegen aan documentatie
+    def get_site_id(self) -> str:
+        site_id = StoringsAnalyse._site_id_dict.__getitem__(self.project)
+        return site_id
+
+    def query_maximo_database(self, work_type: str = "COR") -> str:
+        self.check_site_id_value()
+        query = self.build_query(self._maximo.site_id, self.analysis_time_range, work_type)
         self._maximo.get_response_data(query=query)  # sets self.response_data
         return "Query finished successfully."
 
@@ -202,7 +218,7 @@ class StoringsAnalyse(PrepNPlot):
         :return:
         """
         start_date, end_date = [datetime.strftime(dt, '%Y-%m-%d') for dt in report_time]
-        query = f'sited="{site_id}" and worktype="{work_type}" and reportdate >= "{start_date}" and reportdate <= "{end_date}"'
+        query = f'siteid="{site_id}" and worktype="{work_type}" and reportdate>="{start_date}T00:00:00-00:00" and reportdate<="{end_date}T00:00:00-00:00"'
         return query
 
     """
@@ -305,3 +321,13 @@ def main():
                          quarter="Q2",
                          year="2021",
                          api_key="bWF4YWRtaW46R21iQ1dlbkQyMDE5")
+
+    site_id = sa.get_site_id()
+    print(site_id)
+
+
+if __name__ == '__main__':
+    os.chdir('..')
+    main()
+
+
