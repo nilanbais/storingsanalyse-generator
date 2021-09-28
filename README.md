@@ -845,51 +845,51 @@ None
 Returns the amount of notifications for each month of the specified notification type.
 
 #### Parameters
-- ntype - Notification type. Options are: 'meldingen', 'stroingen', 'onterecht', 'preventief', and 'incident'.
+- **ntype** - Notification type. Options are: 'meldingen', 'storingen', 'onterecht', 'preventief', and 'incident'.
 ---
 ### *dg*.build_text_aantal_per_maand(input_dict)
 Returns a multiline string containing the text that needs to be added.
 
 #### Parameters
-- input_dict - A dictionary containing the different data that is needed to generate the text.
+- **input_dict** - A dictionary containing the different data that is needed to generate the text.
 ---
 ### *dg*.get_quarter_comparison(ntype)
 Method to calculate the data needed, adds them to a data dictionary and returns this dictionary.
 
 #### Parameters
-- ntype - Notification type. Options are: 'meldingen', 'stroingen', 'onterecht', 'preventief', and 'incident'.
+- **ntype** - Notification type. Options are: 'meldingen', 'storingen', 'onterecht', 'preventief', and 'incident'.
 ---
 ### *dg*.build_quarter_comparison(input_data_dict)
 Returns a multiline string containing the text that needs to be added.
 
 #### Parameters
-- input_data_dict - A dictionary containing the different data that is needed to generate the text.
+- **input_data_dict** - A dictionary containing the different data that is needed to generate the text.
 ---
 ### *dg*.get_aantal_per_subsystem(ntype, threshold)
 Method to calculate the data needed, adds them to a data dictionary and returns this dictionary.
 
 #### Parameters
-- ntype - Notification type. Options are: 'meldingen', 'stroingen', 'onterecht', 'preventief', and 'incident'.
-- threshold - Value of the minimum amount of totifications needed to be added in the text.
+- **ntype** - Notification type. Options are: 'meldingen', 'storingen', 'onterecht', 'preventief', and 'incident'.
+- **threshold** - Value of the minimum amount of totifications needed to be added in the text.
 ---
 ### *dg*.build_text_aantal_per_subsysteem(input_data_dict)
 Returns a multiline string containing the text that needs to be added.
 
 #### Parameters
-- input_data_dict - A dictionary containing the different data that is needed to generate the text.
+- **input_data_dict** - A dictionary containing the different data that is needed to generate the text.
 ---
 ### *dg*.get_aantal_per_subsysteem(ntype, threshold)
 Method to calculate the data needed, adds them to a data dictionary and returns this dictionary.
 
 #### Parameters
-- ntype - Notification type. Options are: 'meldingen', 'stroingen', 'onterecht', 'preventief', and 'incident'.
-- threshold - Value of the minimum amount of totifications needed to be added in the text.
+- **ntype** - Notification type. Options are: 'meldingen', 'storingen', 'onterecht', 'preventief', and 'incident'.
+- **threshold** - Value of the minimum amount of totifications needed to be added in the text.
 ---
 ### *dg*.build_text_aantal_per_subsysteem(input_data_dict)
 Returns a multiline string containing the text that needs to be added.
 
 #### Parameters
-- input_data_dict - A dictionary containing the different data that is needed to generate the text.
+- **input_data_dict** - A dictionary containing the different data that is needed to generate the text.
 ---
 ### *dg*.build_conclusie_algemeen_intro()
 Returns a multiline string containing the text that needs to be added.
@@ -903,14 +903,14 @@ Retrieves/collects the data for the poo table in a way that is compatible wit th
 style table. Method returns a data_dict.
 
 #### Parameters
-- poo_type - The type of POO data which applies to the text. Options are: 'probleem', 'oorzaak' and 'oplossing'.
+- **poo_type** - The type of POO data which applies to the text. Options are: 'probleem', 'oorzaak' and 'oplossing'.
 ---
 ### *dg*.get_poo_table_data_v2(poo_type)
 Retrieves/collects the data for the poo table in a way that is compatible wit the method that builds the docx style 
 table.
 
 #### Parameters
-- poo_type - The type of POO data which applies to the text. Options are: 'probleem', 'oorzaak' and 'oplossing'.
+- **poo_type** - The type of POO data which applies to the text. Options are: 'probleem', 'oorzaak' and 'oplossing'.
 ---
 ### *dg*.build_poo_type_table(input_data, docx_object)
 Method that builds a POO table in the input docx_object, using the headers as column names and the row_data as data 
@@ -924,37 +924,37 @@ to fill the table.
 Method to calculate the data needed, adds them to a data dictionary and returns this dictionary.
 
 #### Parameters
-- ntype - Notification type. Options are: 'meldingen', 'stroingen', 'onterecht', 'preventief', and 'incident' 
+- **ntype** - Notification type. Options are: 'meldingen', 'storingen', 'onterecht', 'preventief', and 'incident' 
   (default = 'storingen').
-- threshold - Value of the minimum amount of totifications needed to be added in the text.
+- **threshold** - Value of the minimum amount of totifications needed to be added in the text.
 ---
 ### *dg*.build_aantal_per_subsysteem_per_maand(input_data_dict)
 Returns a multiline string containing the text that needs to be added.
 
 #### Parameters
-- input_data_dict - A dictionary containing the different data that is needed to generate the text.
+- **input_data_dict** - A dictionary containing the different data that is needed to generate the text.
 ---
 ### *dg*.get_asset_meeste_ntype_algemeen(threshold, ntype = 'meldingen')
 Method to calculate the data needed, adds them to a data dictionary and returns this dictionary.
 
 #### Parameters
-- ntype - Notification type. Options are: 'meldingen', 'stroingen', 'onterecht', 'preventief', and 'incident' 
+- **ntype** - Notification type. Options are: 'meldingen', 'storingen', 'onterecht', 'preventief', and 'incident' 
   (default = 'meldingen').
-- threshold - Value of the minimum amount of totifications needed to be added in the text.
+- **threshold** - Value of the minimum amount of totifications needed to be added in the text.
 ---
 ### *dg*.build_asset_meeste_ntype_algemeen(input_data_dict)
 Returns a multiline string containing the text that needs to be added.
 
 #### Parameters
-- input_data_dict - A dictionary containing the different data that is needed to generate the text.
+- **input_data_dict** - A dictionary containing the different data that is needed to generate the text.
 ---
 ### *dg*.get_asset_meeste_ntype_algemeen_v2(threshold, ntype = 'meldingen')
 Method to calculate the data needed, adds them to a data dictionary and returns this dictionary.
 
 #### Parameters
-- ntype - Notification type. Options are: 'meldingen', 'stroingen', 'onterecht', 'preventief', and 'incident' 
+- **ntype** - Notification type. Options are: 'meldingen', 'storingen', 'onterecht', 'preventief', and 'incident' 
   (default = 'meldingen').
-- threshold - Value of the minimum amount of totifications needed to be added in the text.
+- **threshold** - Value of the minimum amount of totifications needed to be added in the text.
 ---
 ### *dg*.build_asset_meeste_ntype_algemeen_v2(input_data, docx_object)
 Method that builds a table in the input docx_object, using the headers as column names and the row_data as data 
@@ -968,15 +968,38 @@ to fill the table.
 Method to calculate the data needed, adds them to a data dictionary and returns this dictionary.
 
 #### Parameters
-- ntype - Notification type. Options are: 'meldingen', 'stroingen', 'onterecht', 'preventief', and 'incident' 
+- **ntype** - Notification type. Options are: 'meldingen', 'storingen', 'onterecht', 'preventief', and 'incident' 
   (default = 'meldingen').
-- threshold - Value of the minimum amount of totifications needed to be added in the text.
+- **threshold** - Value of the minimum amount of notifications needed to be added in the text.
 ---
 ### *dg*.build_asset_uitwerking_ntypes(input_data_dict)
 Returns a multiline string containing the text that needs to be added.
 
 #### Parameters
-- input_data_dict - A dictionary containing the different data that is needed to generate the text.
+- **input_data_dict** - A dictionary containing the different data that is needed to generate the text.
 ---
 ### *dg*.build_asset_uitwerking_ntypes_v2(input_dict, docx_paragraph_object, docx_object)
+The version 2 method combines the calculation of the data and writing the data to the docx_object.
 
+#### Parameters
+- **input_data_dict** - A dictionary containing the different data that is needed to generate the text. 
+- **docx_paragraph_object** - A paragraph object specific to the python-docx package.
+- **docx_object** - The docx_object to which all the text is added.
+
+### *dg*.build_asset_conclusie(input_dict)
+Method to generate the text.
+
+#### Parameters
+- **input_data_dict** - A dictionary containing the different data that is needed to generate the text.
+
+### *dg*.build_full_document(threshold = 3)
+Method for building the whole text document.
+
+#### Parameters
+- **threshold** - Value of the minimum amount of notifications needed to be added in the text (default = 3).
+
+### *dg*.build_appendix(threshold = 0)
+Method for building the appendix document.
+
+#### Parameters
+- **threshold** - Value of the minimum amount of notifications needed to be added in the appendix (default = 0).
