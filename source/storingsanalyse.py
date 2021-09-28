@@ -162,6 +162,58 @@ class StoringsAnalyse(PrepNPlot):
         end_date = start_date + timedelta(days=(time_delta_days - 1))  # timedelta is UP UNTIL the first day of next Q, - 1 days to get last day of current Q
         return [start_date, end_date]
 
+    # todo: documenteren
+    def _get_time_range(self, quarter: str):
+        # collect a list of the months within the given quarter
+        months = sorted(list(PrepNPlot._quarters.__getitem__(quarter)))
+        # calc number of days for each month and sum them
+        time_delta_days = sum([self.number_of_days_in_month(month=int(month), year=int(self.year)) for month in months])
+        # get the start and end date
+        start_date = datetime(year=int(self.year), month=int(months[0]), day=1)  # always start a first of the month
+        end_date = start_date + timedelta(days=(time_delta_days - 1))  # timedelta is UP UNTIL the first day of next Q, - 1 days to get last day of current Q
+        return [start_date, end_date]
+
+    # todo: documenteren
+    @staticmethod
+    def compare_quarters(curr_quarter: str, prev_quarter: str):
+        """
+        Compares the current and previous quarter to see if the previous quarter is at the end of the previous year.
+        This method returns true when the previous quarter is larger than the current quarter ('Q4' > 'Q1' -> True )
+        :param curr_quarter:
+        :param prev_quarter:
+        :return:
+        """
+        curr = curr_quarter.replace('Q', '')
+        prev = prev_quarter.replace('Q', '')
+        if int(prev) > int(curr):
+            return True
+
+        return False
+
+    # todo: documenteren
+    def get_time_range_v2(self, mode: str) -> List[datetime, datetime]:
+        """
+
+        :param mode: mode is to specify if the timerange of the current or the prev quarter needs to be retrieved.
+        :return:
+        """
+        if mode == 'pc':  # mode specification can ben adjusted later
+            # get time ranges for current and previous quarters
+            curr_q_tr = self._get_time_range(quarter=self.quarter)
+            prev_q_tr = self._get_time_range(quarter=self.prev_quarter)
+            # check if the number of the previous quarter is larger than that of the current quarter
+            if self.compare_quarters(prev_quarter=self.prev_quarter, curr_quarter=self.quarter):
+                # if so, adjust the start date to be in the previous year
+                start_date = datetime(year=int(self.prev_year), month=prev_q_tr[0].month, day=1)
+            else:
+                start_date = prev_q_tr[0]
+
+            end_date = curr_q_tr[-1]
+
+            return [start_date, end_date]
+        else:
+            raise ValueError("Please specify the correct mode for calulating the time range")
+
     """
     Patch methods -- methods that make adjustments that are easier/faster to change in a patch than to solve in source
     """
@@ -322,8 +374,8 @@ def main():
                          year="2021",
                          api_key="bWF4YWRtaW46R21iQ1dlbkQyMDE5")
 
-    site_id = sa.get_site_id()
-    print(site_id)
+    time_range = sa.get_time_range_v2(mode='pc')
+    print(time_range)
 
 
 if __name__ == '__main__':
