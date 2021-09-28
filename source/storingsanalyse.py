@@ -191,7 +191,7 @@ class StoringsAnalyse(PrepNPlot):
         return False
 
     # todo: documenteren
-    def get_time_range_v2(self, mode: str) -> List[datetime, datetime]:
+    def get_time_range_v2(self, mode: str) -> List[datetime]:
         """
 
         :param mode: mode is to specify if the timerange of the current or the prev quarter needs to be retrieved.
