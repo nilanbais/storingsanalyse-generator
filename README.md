@@ -727,6 +727,39 @@ Returns a list with the names of the month or months that correspond to the maxi
 - **notifications_groupby_month** - a dictionary of the notifications grouped by the month in which they were reported.
 - **min_max** - Specification of if the returned value needs to be the minimum or maximum (using 'min' or 'max').
 ---
+### *sa*.get_time_range()
+Method that returns the time range of the current quarter. It returns it in the form of and start and end datetime 
+object in a list. 
+
+#### Parameters
+None
+
+---
+### *sa*._get_time_range(quarter)
+Method that returns the time range of a given quarter. the quarter needs to be specified in the form 'Qx', with x being
+the number of the quarter.
+
+#### Parameters
+- **quarter** - A string representing the one of the four quarters.
+---
+### *sa*.compare_quarters(curr_quarter, prev_quarter)
+Compares the current and previous quarter to see if the previous quarter is at the end of the previous year. This
+method returns true when the previous quarter is larger than the current quarter ('Q4' > 'Q1' -> True ).
+
+#### Parameters
+- **curr_quarter** - The string notation of the current quarter.
+- **prev_quarter** - The string notation of the previous quarter.
+---
+### *sa*.get_time_range_v2(mode)
+Method that returns different time ranges depending on the mode that is specified.
+
+Mode:
+  - 'pc' - Mode returns the time range from beginning previous quarter to end of the current quarter.
+
+#### Parameters
+- **mode** - Mode for retrieving the time range
+
+---
 ### *sa*.sbs_patch(project)
 Patch for the different notations of the sbs numbers.
 
