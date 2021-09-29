@@ -537,7 +537,6 @@ class DocumentGeneratorCoentunnel:
             docx_object.add_heading('Asset: ' + str(df.loc[0, 'asset beschrijving']), level=3)
 
             # Onderstaande tekst komt niet op de plaats waar deze moet komen
-            # misschien optie om in deze functie een paragraph te maken per asset dat behandeld moet worden.
             # todo: bovenstaande
             line = f"""De {len(df)} meldingen van {df.loc[0, 'asset beschrijving']} worden hieronder gepresenteerd.{self.newline}"""
             docx_paragraph_object.add_run(line)
@@ -792,7 +791,7 @@ class DocumentGeneratorCoentunnel:
         # Meldingen
         #
         categories, prepped_data = self.sa.prep(self.sa.metadata.unsaved_updated_meta['meldingen'],
-                                                time_range=['10-2020', '03-2021'],
+                                                time_range=self.sa.get_time_range_v2(mode='pc'),
                                                 available_categories=available_categories,
                                                 time_key='rapport datum',
                                                 category_key='sbs',
@@ -805,7 +804,7 @@ class DocumentGeneratorCoentunnel:
                      title=title)
 
         summary_data = self.sa.prep_summary(self.sa.metadata.unsaved_updated_meta['meldingen'],
-                                            time_range=['10-2020', '03-2021'],
+                                            time_range=self.sa.get_time_range_v2(mode='pc'),
                                             available_categories=available_categories,
                                             bin_size='quarter')
 
@@ -817,7 +816,7 @@ class DocumentGeneratorCoentunnel:
         # Storingen
         #
         categories, prepped_data = self.sa.prep(self.sa.metadata.unsaved_updated_meta['storingen'],
-                                                time_range=['10-2020', '03-2021'],
+                                                time_range=self.sa.get_time_range_v2(mode='pc'),
                                                 available_categories=available_categories,
                                                 time_key='rapport datum',
                                                 category_key='sbs',
@@ -830,7 +829,7 @@ class DocumentGeneratorCoentunnel:
                      title=title)
 
         summary_data = self.sa.prep_summary(self.sa.metadata.unsaved_updated_meta['storingen'],
-                                            time_range=['10-2020', '03-2021'],
+                                            time_range=self.sa.get_time_range_v2(mode='pc'),
                                             available_categories=available_categories,
                                             bin_size='quarter')
 
@@ -854,7 +853,7 @@ class DocumentGeneratorCoentunnel:
         to_process = [x for x in sbs_count.index if sbs_count.at[x] >= threshold]
         for di_num in to_process:
             categories, prepped_data = self.sa.prep(df_groupby_sbs.get_group(di_num),
-                                                    time_range=['10-2020', '03-2021'],
+                                                    time_range=self.sa.get_time_range_v2(mode='pc'),
                                                     available_categories=unique_types,
                                                     time_key='rapport datum',
                                                     category_key='type melding (Storing/Incident/Preventief/Onterecht)')
@@ -866,7 +865,7 @@ class DocumentGeneratorCoentunnel:
                          title=title)
 
             summary_data = self.sa.prep_summary(df_groupby_sbs.get_group(di_num),
-                                                time_range=['10-2020', '03-2021'],
+                                                time_range=self.sa.get_time_range_v2(mode='pc'),
                                                 available_categories=unique_types,
                                                 time_key='rapport datum',
                                                 category_key='type melding (Storing/Incident/Preventief/Onterecht)')
@@ -900,4 +899,5 @@ def main():
 
 
 if __name__ == '__main__':
+    os.chdir('..')
     main()
