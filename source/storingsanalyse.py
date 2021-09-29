@@ -162,7 +162,6 @@ class StoringsAnalyse(PrepNPlot):
         end_date = start_date + timedelta(days=(time_delta_days - 1))  # timedelta is UP UNTIL the first day of next Q, - 1 days to get last day of current Q
         return [start_date, end_date]
 
-    # todo: documenteren
     def _get_time_range(self, quarter: str):
         # collect a list of the months within the given quarter
         months = sorted(list(PrepNPlot._quarters.__getitem__(quarter)))
@@ -173,7 +172,6 @@ class StoringsAnalyse(PrepNPlot):
         end_date = start_date + timedelta(days=(time_delta_days - 1))  # timedelta is UP UNTIL the first day of next Q, - 1 days to get last day of current Q
         return [start_date, end_date]
 
-    # todo: documenteren
     @staticmethod
     def compare_quarters(curr_quarter: str, prev_quarter: str):
         """
@@ -190,7 +188,6 @@ class StoringsAnalyse(PrepNPlot):
 
         return False
 
-    # todo: documenteren
     def get_time_range_v2(self, mode: str) -> List[datetime]:
         """
 
