@@ -1,5 +1,6 @@
 {
 	"__comment": "all folders are relative from the project repo root",
+	"root_folder": "Automatisering Storingsanalyse",
 	"maximo_response_data_folder": "data/raw_database_data",
 	"maximo_response_data_filename": "maximo_response_data.json",
 	"information_mapping_folder": "resources/information_mapping",
