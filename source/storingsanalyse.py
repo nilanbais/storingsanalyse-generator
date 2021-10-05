@@ -293,9 +293,10 @@ class StoringsAnalyse(PrepNPlot):
     def set_staging_file_name(self, staging_file_name: str) -> None:
         pass
 
-    def build_staging_file(self, maximo_export_data_filename: str) -> None:
+    # todo: aanpassen in documentatie
+    def build_staging_file(self, maximo_export_data_filename: str, export_path: str = None) -> None:
         sfb = StagingFileBuilder(maximo_export_data_filename=maximo_export_data_filename)
-        sfb.build_staging_file()
+        sfb.build_staging_file(export_path=export_path)
         self.staging_file_name = sfb.export_file_name
 
     def read_staging_file(self) -> DataFrame:
