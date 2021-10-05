@@ -375,14 +375,14 @@ class StagingFileBuilder:
 
         return "Done."
 
-    def save_staging_file(self) -> str:
+    def save_staging_file(self, export_path: str = None) -> str:
         """
         method for saving the staging file. It also adds the dropdown for the list for inserting the different types
         of notifications.
         :return:
         """
         filename = StagingFileBuilder._default_file_name if self.export_file_name is None else self.export_file_name
-        export_path = f'..\\staging file\\{filename}'
+        export_path = f'..\\staging file\\{filename}' if export_path is None else export_path
 
         letters = list(string.ascii_uppercase)
 
@@ -443,11 +443,12 @@ class StagingFileBuilder:
         workbook.close()
         return f"Staging file saved as {filename} in the folder 'staging file'."
 
-    def build_staging_file(self) -> None:
+    # todo: aanpassen in documentatie
+    def build_staging_file(self, export_path: str = None) -> None:
         self.build_base_df()
         self.prep_staging_file_df()
         self.export_file_name = self._default_file_name  # freezing name because of the date and time in the name
-        self.save_staging_file()
+        self.save_staging_file(export_path=export_path)
 
 
 def main() -> None:
