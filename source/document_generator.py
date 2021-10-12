@@ -23,8 +23,8 @@ worden toegepast om de data op de juiste plek in de tekst te substitueren.
 
 
 # todo: process schrijven voor wanneer verkeerde variabelen zijn ingevuld als parameters en er dus niets gebeurt
-# todo: toevoegen aan documentatie
-class DocumentGeneratorCoentunnel:
+# todo: aanpassen in documentatie
+class DocumentGenerator:
 
     def __init__(self, project: str, api_key: str, rapport_type: str, quarter: str, year: str, staging_file_name: str = None) -> None:
         self.sa = StoringsAnalyse(project, api_key, rapport_type, quarter, year, staging_file_name)
@@ -568,7 +568,8 @@ class DocumentGeneratorCoentunnel:
     """
     Full document builders - methods that are responsible 
     """
-    def build_full_document(self, threshold: int = 3):
+    # todo: aanpassen in documentatie
+    def build_full_document(self, path_to_folder: str = "", threshold: int = 3):
         # todo: aanpassen zodat de bold koppen level 3 koppen worden
         self.del_old_export()
         print('Creating file ' + self._default_export_file_name)
@@ -678,16 +679,16 @@ class DocumentGeneratorCoentunnel:
         # conclusie_algemeen.add_run(self.newline)
         # doc.save(self._default_export_file_name)
         asset_conclusie.add_run(self.build_asset_conclusie(self.get_asset_meeste_ntype_algemeen(threshold=threshold)))
-        doc.save(self._default_export_file_name)
+        doc.save(os.path.join(path_to_folder, self._default_export_file_name))
 
         print('Done. The text file is stored at ' + os.getcwd())
 
-    def build_appendix(self, threshold: int = 0):
+    def build_appendix(self, path_to_folder: str = "", threshold: int = 0):
         print('Creating file ' + self._default_export_file_name_appendix)
         title = 'title'
         #
         # Aantal meldingen per deelinstallatie
-        #1
+        #
         df = self.sa.return_ntype_staging_file_object(ntype='meldingen')
         time_range = [min(df['rapport datum']), max(df['rapport datum'])]
         available_categories = self.sa.metadata.contract_info()['aanwezige_deelinstallaties']
@@ -877,7 +878,7 @@ class DocumentGeneratorCoentunnel:
         #
         # Exporting appendix
         #
-        self.sa.export_graphs(filename=self._default_export_file_name_appendix)
+        self.sa.export_graphs(filename=os.path.join(path_to_folder, self._default_export_file_name_appendix))
         print('Done. The appendix file is stored at ' + os.getcwd())
 
 
@@ -888,12 +889,12 @@ def main():
     also introduce bugs).
     :return:
     """
-    dg = DocumentGeneratorCoentunnel(project="Coentunnel-tracé",
-                                     rapport_type="Kwartaalrapportage",
-                                     quarter="Q2",
-                                     year="2021",
-                                     api_key='bWF4YWRtaW46R21iQ1dlbkQyMDE5',
-                                     staging_file_name='validating_input_data.xlsx')
+    dg = DocumentGenerator(project="Coentunnel-tracé",
+                           rapport_type="Kwartaalrapportage",
+                           quarter="Q2",
+                           year="2021",
+                           api_key='bWF4YWRtaW46R21iQ1dlbkQyMDE5',
+                           staging_file_name='validating_input_data.xlsx')
     dg.build_full_document()
     dg.build_appendix()
 

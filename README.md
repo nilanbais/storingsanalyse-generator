@@ -843,7 +843,7 @@ is optional (default = None).
 ```
 from document_generator import DocumentGenerator
 
-dg = DocumentGeneratorCoentunnel(project, rapport_type, quarter, year, api_key, staging_file_name = None)
+dg = DocumentGenerator(project, rapport_type, quarter, year, api_key, staging_file_name = None)
 ```
 
 ## Class variables
