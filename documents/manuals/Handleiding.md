@@ -72,3 +72,7 @@ Na het doorlopen van het script, zijn de documenten beschikbaar in de map `docum
 worden gedownload zoals [hier](#Genereren-van-een-staging-file) omschereven.
 
 ## Toevoegen van een nieuw project
+
+
+## Verdere ondersteuning
+HIER BESCHRIJVEN WAT MEN MOET DOEN OM EEN NIEUWE LOCATION_MAPPING TOE TE VOEGEN.
