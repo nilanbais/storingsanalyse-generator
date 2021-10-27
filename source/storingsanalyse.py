@@ -29,7 +29,7 @@ from python_packages.prepnplot import PrepNPlot
 
 from pandas import DataFrame
 from matplotlib.figure import Figure
-from typing import List
+from typing import List, Union
 from datetime import datetime, timedelta
 from calendar import monthrange
 
@@ -107,7 +107,7 @@ class StoringsAnalyse(PrepNPlot):
             description_data = json.load(file)
         return pd.DataFrame(description_data)
 
-    def _get_breakdown_description(self, sbs_lbs: str) -> str:
+    def get_breakdown_description(self, sbs_lbs: str) -> str:
         description = [self._ld_map.loc[str(index), 'description']
                        for index in range(self._ld_map.shape[0])
                        if sbs_lbs == self._ld_map.loc[str(index), 'location']]
@@ -187,6 +187,21 @@ class StoringsAnalyse(PrepNPlot):
             return True
 
         return False
+
+    def get_prev_quarter(self, current_quarter: str, current_year: Union[str, int]) -> tuple:
+        """
+        method returns the correct combination of quarter and year. Also in the cases of Q1 2020 (returns Q4 2019)
+        :param current_quarter:
+        :param current_year:
+        :return:
+        """
+        _year = int(current_year) if isinstance(current_year, str) else current_year
+        prev_quarter = self.quarter_sequence.get_prev_val(current_quarter)
+        if self.compare_quarters(curr_quarter=current_quarter, prev_quarter=prev_quarter):
+            year = _year - 1
+            return prev_quarter, str(year)
+
+        return prev_quarter, str(_year)
 
     def get_time_range_v2(self, mode: str) -> List[datetime]:
         """

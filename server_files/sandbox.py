@@ -10,6 +10,8 @@ row_contents
 """
 import os
 import docxtpl
+import docx
+from docxcompose.composer import Composer
 
 tekst = """
 multi line string vol met bullshiii puur om te testen met 

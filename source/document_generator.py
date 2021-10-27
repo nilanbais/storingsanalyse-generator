@@ -179,7 +179,7 @@ class DocumentGenerator:
         for sbs in sbs_to_process:
             ntype_per_sbs = sbs_count[sbs]
             percentage_ntype = round((ntype_per_sbs / sum(sbs_count)) * 100, 2)
-            line = f"{self.sa._get_breakdown_description(sbs)}{self.tab}- {ntype_per_sbs} meldingen ({percentage_ntype}% van het totale aantal meldingen)"
+            line = f"{self.sa.get_breakdown_description(sbs)}{self.tab}- {ntype_per_sbs} meldingen ({percentage_ntype}% van het totale aantal meldingen)"
             rows_to_process.append(line)
 
         # notification type
@@ -378,7 +378,7 @@ class DocumentGenerator:
         text = """"""
         for sub_system in input_data_dict.keys():
             sub_system_data = input_data_dict[sub_system]
-            sub_system_name = self.sa._get_breakdown_description(sbs_lbs=sub_system)
+            sub_system_name = self.sa.get_breakdown_description(sbs_lbs=sub_system)
             text = text + '# ' + str(sub_system) + ' ' + sub_system_name + self.newline + self.build_text_aantal_per_maand(input_data_dict=sub_system_data) + self.newline
 
         return text
@@ -422,7 +422,7 @@ class DocumentGenerator:
         lines2handle = ntype_per_asset[ntype_per_asset['count'] >= threshold]
         for r in lines2handle.iterrows():
             row = r[1]
-            line = ''.join((self.newline + '|' + str(self.sa._get_breakdown_description(sbs_dict[row[0]])) + '|' + str(row[-1]) + '|' + str(row[1]) + '|'))
+            line = ''.join((self.newline + '|' + str(self.sa.get_breakdown_description(sbs_dict[row[0]])) + '|' + str(row[-1]) + '|' + str(row[1]) + '|'))
             data_dict['lines'].append(line)
 
         return data_dict
@@ -466,7 +466,7 @@ class DocumentGenerator:
         lines2handle = ntype_per_asset[ntype_per_asset['count'] >= threshold]
         for r in lines2handle.iterrows():
             row = r[1]
-            data_dict["rows"].append((self.sa._get_breakdown_description(sbs_dict[row[0]]), row[-1], row[1]))
+            data_dict["rows"].append((self.sa.get_breakdown_description(sbs_dict[row[0]]), row[-1], row[1]))
 
         return data_dict
 
